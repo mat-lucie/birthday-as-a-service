@@ -70,18 +70,21 @@ export default {
     /** ISO date of the last day of the birthday week */
     endDate: '2026-06-07',
     /**
-     * Display-only prose date strings — kept in sync with startDate/endDate by hand.
-     * They do NOT derive from the ISO dates automatically; if you change startDate
-     * or endDate, update dateRange / dateRangeShort / dateRangeFull / monthYear too.
+     * Display-only prose date strings.
+     * Leave empty ('') to auto-derive from startDate/endDate + locale.language at
+     * build time — the script formats them with the correct month names for the
+     * chosen language and handles same-month, cross-month, and cross-year ranges.
+     * Set a non-empty string to override the derived value (e.g. a custom shorthand
+     * or a language the Intl formatter doesn't handle to your taste).
      */
-    /** Human-readable range — used in hero and loading screen */
-    dateRange: 'Jun 1 – 7, 2026',
-    /** Compact variant used in tight spaces */
-    dateRangeShort: 'Jun 1–7',
-    /** Long em-dash variant for display headings */
-    dateRangeFull: 'June 1 — 7, 2026',
-    /** Month + year label */
-    monthYear: 'Jun 2026',
+    /** Human-readable range — e.g. "Jun 1 – 7, 2026". Empty = auto-derived. */
+    dateRange: '',
+    /** Compact variant for tight spaces — e.g. "Jun 1–7". Empty = auto-derived. */
+    dateRangeShort: '',
+    /** Long em-dash variant for display headings — e.g. "June 1 — 7, 2026". Empty = auto-derived. */
+    dateRangeFull: '',
+    /** Month + year of the start date — e.g. "Jun 2026". Empty = auto-derived. */
+    monthYear: '',
     /**
      * The id of the "headliner" birthday event — receives a highlighted
      * dark-forest hero card treatment. Must match the `id` field of one of

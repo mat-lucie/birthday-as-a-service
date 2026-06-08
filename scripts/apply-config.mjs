@@ -39,6 +39,114 @@ const ROOT = resolve(__dirname, '..');
 // ── Load config ────────────────────────────────────────────────────────────
 const { default: config } = await import(`${ROOT}/birthday.config.js`);
 
+// ── Derive prose date strings from ISO dates + locale ──────────────────────
+/**
+ * Derives the four prose date-range strings from ISO start/end dates and a
+ * BCP-47 language tag. Uses Intl.DateTimeFormat.formatToParts() so month
+ * names localise automatically (e.g. 'es' → 'jun'/'junio') while we control
+ * the exact punctuation (en-dash –, em-dash —).
+ *
+ * ISO dates are parsed as local-noon (T12:00:00) to avoid UTC midnight
+ * rolling back one day in negative-offset time zones.
+ *
+ * Returns an object with keys: dateRange, dateRangeShort, dateRangeFull, monthYear.
+ * Returns null (with a warning logged) if the dates are invalid.
+ */
+function deriveDateStrings(startISO, endISO, language) {
+  if (!startISO || !endISO) {
+    console.warn('  [WARN] deriveDateStrings: startDate or endDate is empty — skipping derivation, manual values will be used.');
+    return null;
+  }
+
+  const start = new Date(`${startISO}T12:00:00`);
+  const end   = new Date(`${endISO}T12:00:00`);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.warn(`  [WARN] deriveDateStrings: could not parse dates ("${startISO}", "${endISO}") — skipping derivation, manual values will be used.`);
+    return null;
+  }
+
+  const lang = language || 'en';
+
+  // Helper: extract a named part from formatToParts output
+  function part(parts, type) {
+    return (parts.find(p => p.type === type) || { value: '' }).value;
+  }
+
+  // Formatters
+  const fmtShortMonth = new Intl.DateTimeFormat(lang, { month: 'short' });
+  const fmtLongMonth  = new Intl.DateTimeFormat(lang, { month: 'long' });
+  const fmtYear       = new Intl.DateTimeFormat(lang, { year: 'numeric' });
+
+  const startShortMonth = fmtShortMonth.format(start);
+  const endShortMonth   = fmtShortMonth.format(end);
+  const startLongMonth  = fmtLongMonth.format(start);
+  const endLongMonth    = fmtLongMonth.format(end);
+  const startDay        = start.getDate();
+  const endDay          = end.getDate();
+  const startYear       = start.getFullYear();
+  const endYear         = end.getFullYear();
+
+  const sameMonth = (start.getMonth() === end.getMonth() && startYear === endYear);
+  const sameYear  = (startYear === endYear);
+
+  // ── dateRange: "Jun 1 – 7, 2026"  /  cross-month: "May 31 – Jun 7, 2026"
+  //               cross-year: "Dec 31, 2025 – Jan 2, 2026"
+  let dateRange;
+  if (sameMonth) {
+    dateRange = `${startShortMonth} ${startDay} – ${endDay}, ${startYear}`;
+  } else if (sameYear) {
+    dateRange = `${startShortMonth} ${startDay} – ${endShortMonth} ${endDay}, ${startYear}`;
+  } else {
+    dateRange = `${startShortMonth} ${startDay}, ${startYear} – ${endShortMonth} ${endDay}, ${endYear}`;
+  }
+
+  // ── dateRangeShort: "Jun 1–7"  /  cross-month: "May 31 – Jun 7"  (no year)
+  let dateRangeShort;
+  if (sameMonth) {
+    dateRangeShort = `${startShortMonth} ${startDay}–${endDay}`;
+  } else {
+    dateRangeShort = `${startShortMonth} ${startDay} – ${endShortMonth} ${endDay}`;
+  }
+
+  // ── dateRangeFull: "June 1 — 7, 2026"  /  cross-month: "May 31 — June 7, 2026"
+  //                  cross-year: "December 31, 2025 — January 2, 2026"
+  let dateRangeFull;
+  if (sameMonth) {
+    dateRangeFull = `${startLongMonth} ${startDay} — ${endDay}, ${startYear}`;
+  } else if (sameYear) {
+    dateRangeFull = `${startLongMonth} ${startDay} — ${endLongMonth} ${endDay}, ${startYear}`;
+  } else {
+    dateRangeFull = `${startLongMonth} ${startDay}, ${startYear} — ${endLongMonth} ${endDay}, ${endYear}`;
+  }
+
+  // ── monthYear: "Jun 2026" (short month + year of start date)
+  const monthYear = `${startShortMonth} ${startYear}`;
+
+  return { dateRange, dateRangeShort, dateRangeFull, monthYear };
+}
+
+// ── Apply derived date strings (manual overrides win if non-empty) ──────────
+const derivedDates = deriveDateStrings(
+  config.event.startDate,
+  config.event.endDate,
+  config.locale.language,
+);
+
+const DATE_PROSE_FIELDS = ['dateRange', 'dateRangeShort', 'dateRangeFull', 'monthYear'];
+
+// Track which fields are using a manual override (for logging).
+const dateFieldSources = {};
+if (derivedDates) {
+  for (const field of DATE_PROSE_FIELDS) {
+    const manual = config.event[field];
+    const isOverride = manual && typeof manual === 'string' && manual.trim() !== '';
+    // Manual value wins if non-empty string; otherwise use derived.
+    config.event[field] = isOverride ? manual : derivedDates[field];
+    dateFieldSources[field] = isOverride ? 'override' : 'derived';
+  }
+}
+
 // ── Flatten config into a token map { 'site.title': "Sam's Birthday Week", … } ───
 function flatten(obj, prefix = '') {
   const out = {};
@@ -186,7 +294,15 @@ console.log('\nbirthdayaas apply-config');
 console.log('────────────────────────');
 console.log(`  host: ${config.host.fullName} (${config.host.name}), age ${config.host.age}`);
 console.log(`  site: ${config.site.title} · ${config.site.domain}`);
-console.log(`  event: ${config.event.dateRange}`);
+console.log(`  event dates: ${config.event.startDate} → ${config.event.endDate}`);
+if (derivedDates) {
+  // Show each field with its source (derived or manual override)
+  for (const field of DATE_PROSE_FIELDS) {
+    console.log(`  ${field}: ${config.event[field]}  [${dateFieldSources[field]}]`);
+  }
+} else {
+  console.log(`  event: ${config.event.dateRange} (manual)`);
+}
 console.log('');
 
 processTemplate(
@@ -306,16 +422,15 @@ for (const [name, path] of [['app.js', resolve(ROOT, 'public/app.js')], ['calend
   }
 }
 
-// ── Date-consistency WARNING ───────────────────────────────────────────────
-// If config.event.dateRange doesn't contain the start year, warn the forker
-// that the prose date strings may be out of sync with the ISO dates.
-// This is a non-fatal warning — we never block the build on it.
-try {
-  const startYear = config.event.startDate ? config.event.startDate.slice(0, 4) : null;
-  if (startYear && !String(config.event.dateRange || '').includes(startYear)) {
-    console.log(`  [WARN] Date consistency: event.dateRange ("${config.event.dateRange}") does not contain the start year ${startYear} from event.startDate ("${config.event.startDate}"). Your prose date strings may be out of sync with the ISO dates — update event.dateRange / dateRangeShort / dateRangeFull / monthYear in birthday.config.js.`);
+// ── Date-override consistency NOTE ────────────────────────────────────────
+// If any prose field was supplied as a manual override, remind the forker that
+// they own keeping it in sync with startDate/endDate.
+if (derivedDates) {
+  const overrides = DATE_PROSE_FIELDS.filter(f => dateFieldSources[f] === 'override');
+  if (overrides.length > 0) {
+    console.log(`  [NOTE] Manual date overrides active for: ${overrides.join(', ')}. Remember to update them if you change startDate/endDate.`);
   }
-} catch (_) { /* non-fatal */ }
+}
 
 console.log('');
 console.log(allPass ? 'Done. All checks passed.' : 'Done with warnings — see ✗ above.');
