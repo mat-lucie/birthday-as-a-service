@@ -30,6 +30,16 @@ export default async function handler(req, res) {
     const guest = await redis.get(`guest:${code}`);
     if (!guest) return res.status(404).json({ error: 'Guest not found' });
 
+    // Optional email second-factor: if the guest has a saved email, any write
+    // must include a matching email — so a leaked invite code alone can't
+    // modify an established RSVP. Guests with no saved email are unaffected.
+    if (config.security?.requireEmailForChanges && guest.email) {
+      const provided = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : null;
+      if (provided !== guest.email.trim().toLowerCase()) {
+        return res.status(403).json({ error: config.strings.errors.emailRequiredToChange });
+      }
+    }
+
     const allEvents = (await redis.get('events')) || [];
     const event = allEvents.find(e => e.id === eventId);
     if (!event) return res.status(404).json({ error: 'Event not found' });

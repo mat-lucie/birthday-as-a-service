@@ -47,6 +47,9 @@ window.BIRTHDAY_CONFIG = {
   "messages": {
     "emailChangeError": "Ask the host to change it."
   },
+  "security": {
+    "requireEmailForChanges": true
+  },
   "strings": {
     "rsvp": {
       "yes": "Yes",
@@ -334,7 +337,8 @@ window.BIRTHDAY_CONFIG = {
       "adminGuestGenderRequired": "Gender is required (f or m).",
       "adminGuestInvalidName": "Invalid name (generates no code).",
       "adminGuestDuplicateCode": "A guest with that code already exists:",
-      "adminGuestCannotDeleteHost": "The host guest cannot be deleted."
+      "adminGuestCannotDeleteHost": "The host guest cannot be deleted.",
+      "emailRequiredToChange": "Enter the email on file to change your RSVP."
     },
     "common": {
       "save": "Save",

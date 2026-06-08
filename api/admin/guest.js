@@ -19,12 +19,15 @@ function slugifyCode(str) {
 
 // New guests get a random hex suffix so codes aren't guessable from the name.
 // Existing guests being updated keep their stored code (we never re-suffix on edit).
-const ROTATED_RE = /-[0-9a-f]{4,8}$/;
+// The regex matches BOTH old (4–8 hex) and new (16 hex / 64-bit) suffixes as "already-rotated"
+// so editing a guest doesn't add a second suffix.
+const ROTATED_RE = /-[0-9a-f]{4,16}$/;
 
 function sanitizeGuest(g, { addRandomSuffix = false } = {}) {
   let code = slugifyCode(g.code || g.name);
   if (addRandomSuffix && code && !ROTATED_RE.test(code)) {
-    code = `${code}-${randomBytes(3).toString('hex')}`;
+    // 8 bytes = 16 hex chars = 64 bits of entropy (up from 24-bit / 3-byte suffix)
+    code = `${code}-${randomBytes(8).toString('hex')}`;
   }
   const out = {
     code,

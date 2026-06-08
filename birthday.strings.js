@@ -744,6 +744,12 @@ export default {
     adminGuestDuplicateCode:  'A guest with that code already exists:',
     /** Returned when the host guest cannot be deleted */
     adminGuestCannotDeleteHost: 'The host guest cannot be deleted.',
+
+    /**
+     * Returned when a guest with a saved email tries to modify their RSVP
+     * without supplying that same email (security.requireEmailForChanges = true).
+     */
+    emailRequiredToChange: 'Enter the email on file to change your RSVP.',
   },
 
   // ── Shared / common ───────────────────────────────────────────────────────

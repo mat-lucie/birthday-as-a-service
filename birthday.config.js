@@ -127,5 +127,21 @@ export default {
     emailChangeError: 'Ask the host to change it.',
   },
 
+  security: {
+    /**
+     * When true, a guest who has a saved email must supply that same email
+     * to modify their RSVP — a lightweight second factor so a leaked invite
+     * code alone can't change an established RSVP.
+     *
+     * Applies only when the guest ALREADY has an email on file. Guests with
+     * no saved email are always unaffected (nothing to match against).
+     * First-time RSVPs are always allowed — the email ratchet only engages
+     * after the guest saves their email via the calendar-confirm flow.
+     *
+     * Set to false for frictionless RSVP (no email check ever).
+     */
+    requireEmailForChanges: true,
+  },
+
   strings,
 };

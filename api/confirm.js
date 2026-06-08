@@ -109,6 +109,16 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: `${config.strings.errors.emailAlreadySaved} ${config.messages.emailChangeError}` });
     }
 
+    // Optional email second-factor: if the guest has a saved email, any RSVP
+    // write must include a matching email. The emailOnFile flow sends no explicit
+    // email (body.email is absent) — that path passes because no mismatch exists.
+    // Guests with no saved email are unaffected.
+    if (config.security?.requireEmailForChanges && guest.email) {
+      if (email && email.trim().toLowerCase() !== guest.email.trim().toLowerCase()) {
+        return res.status(403).json({ error: config.strings.errors.emailRequiredToChange });
+      }
+    }
+
     const now = new Date().toISOString();
     const pipeline = redis.pipeline();
     if (email && !guest.email) {
