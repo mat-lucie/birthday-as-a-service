@@ -692,6 +692,22 @@ export default {
      */
     calendarSendFailed:  'We could not send you the calendar email:',
 
+    // ── Admin authentication errors ────────────────────────────────
+    /**
+     * Returned when ADMIN_PASSWORD / ADMIN_SESSION_SECRET env vars are unset.
+     * Surfaced to the admin UI — not shown to guests.
+     */
+    adminNotConfigured:       'Admin auth not configured (set ADMIN_PASSWORD).',
+    /**
+     * Returned when the admin_session cookie is missing or its token is
+     * invalid / expired.  Generic to avoid leaking verification details.
+     */
+    notAuthenticated:         'Not authenticated.',
+    /** Returned when a POST/PUT/PATCH/DELETE comes from a different origin. */
+    crossOriginBlocked:       'Cross-origin request blocked.',
+    /** Returned on a failed login attempt.  Generic to avoid user enumeration. */
+    loginIncorrect:           'Incorrect password.',
+
     // ── Admin guest management errors ──────────────────────────────
     /** Returned when guest name is missing on create/update */
     adminGuestNameRequired:   'Name is required.',
