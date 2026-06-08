@@ -4,9 +4,9 @@ A self-hosted birthday-week RSVP site — edit one config file, deploy to Vercel
 
 Each guest gets a personal invite link with a unique code. They see the events they're invited to, RSVP per event with an optional +1, and receive a single calendar email (.ics attachment) for everything they said yes to. The host gets a full admin panel: manage events, view RSVPs, broadcast emails to guests.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mat-lucie/birthday-as-a-service&env=KV_REST_API_URL,KV_REST_API_TOKEN,RESEND_API_KEY,SEED_SECRET)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mat-lucie/birthday-as-a-service&env=KV_REST_API_URL,KV_REST_API_TOKEN,RESEND_API_KEY,SEED_SECRET,ADMIN_PASSWORD)
 
-> ⚠️ Complete steps 1–7 below (personalize + generate your secrets) BEFORE deploying — the default config ships a publicly-known admin code.
+> ⚠️ Complete steps 1–8 below (personalize + generate your secrets) BEFORE deploying.
 
 ---
 
@@ -38,7 +38,7 @@ Each guest gets a personal invite link with a unique code. They see the events t
 │  Vercel serverless functions (ESM)      │
 │  guest · rsvp · confirm · seed          │
 │  admin/{event,events,guest,guests,      │
-│         rsvp,rsvps,broadcast}           │
+│         rsvp,rsvps,broadcast,reset}     │
 └──────┬─────────────────┬────────────────┘
        │                 │
 ┌──────▼──────┐   ┌──────▼──────┐
@@ -82,13 +82,17 @@ npm install
 
 > The `email.fromAddress` in `birthday.config.js` must be on your verified domain (e.g. `party@yourdomain.com`).
 
-### 4. Generate a seed secret
+### 4. Generate secrets
 
 ```bash
+# Seed secret — guards the /api/seed endpoint
 openssl rand -hex 24
+
+# Admin password — the password you type on the admin login screen
+openssl rand -base64 18
 ```
 
-Save this as `SEED_SECRET`. It guards the `/api/seed` endpoint so only you can populate the database.
+Save `SEED_SECRET` and `ADMIN_PASSWORD` — you will need both in the next step.
 
 ### 5. Set environment variables
 
@@ -98,12 +102,14 @@ cp .env.example .env.local
 
 Fill in `.env.local` for local use. For deployed environments, set the same variables in **Vercel → Project Settings → Environment Variables**.
 
-| Variable | Description |
-|---|---|
-| `KV_REST_API_URL` | Upstash Redis REST URL |
-| `KV_REST_API_TOKEN` | Upstash Redis REST token |
-| `RESEND_API_KEY` | Resend API key |
-| `SEED_SECRET` | Random secret for the seed endpoint |
+| Variable | Required | Description |
+|---|---|---|
+| `KV_REST_API_URL` | Yes | Upstash Redis REST URL |
+| `KV_REST_API_TOKEN` | Yes | Upstash Redis REST token |
+| `RESEND_API_KEY` | Yes | Resend API key |
+| `SEED_SECRET` | Yes | Random secret for the seed endpoint |
+| `ADMIN_PASSWORD` | Yes | Password for the admin login screen |
+| `ADMIN_SESSION_SECRET` | Optional | Random 32+ byte string to sign admin session tokens independently of the password. Set this in production so you can rotate `ADMIN_PASSWORD` without invalidating live sessions. Generate: `openssl rand -base64 32` |
 
 > **Troubleshooting:** If every invitation link shows the error screen, your Redis env vars (`KV_REST_API_URL` / `KV_REST_API_TOKEN`) are almost certainly unset or wrong — check Vercel → Functions logs for the real error.
 
@@ -113,7 +119,7 @@ Edit **`birthday.config.js`** — this is the only file you _must_ touch:
 
 - `host.name`, `host.fullName`, `host.age`
 - `site.title`, `site.headline`, `site.tagline`, `site.domain`
-- `event.startDate`, `event.endDate`, `event.dateRange` (and the short/full variants)
+- `event.startDate`, `event.endDate` — date prose (`dateRange`, `dateRangeShort`, `dateRangeFull`, `monthYear`) is **auto-derived** from these two values + the configured locale. Leave the prose fields empty to use the derived values, or set them explicitly to override.
 - `email.fromName`, `email.fromAddress` (must match your verified Resend domain)
 - `locale.htmlLang`, `locale.language` (e.g. `"es"` for Spanish)
 
@@ -162,10 +168,10 @@ Set `"visibility": "private"` for invite-only events, and add an `"allowedCodes"
 
 The `code` becomes the guest's URL: `/?code=unique-invite-code`. Make codes memorable but not guessable (e.g. `alex-rivera`).
 
-**Important — the host record and admin code:**
-One guest must have `"isHost": true`. That guest's `code` is the admin key — visiting `/?code=<host-code>` opens the admin panel. **This code is your only admin credential — treat it like a password.**
+**Important — the host record:**
+One guest must have `"isHost": true`. This guest identifies the host in the system (e.g. for filtering in the admin panel) but is no longer used as the admin credential — admin access is now password-based (see step 8 below).
 
-The placeholder `host-REPLACE_ME` appears **twice** in `data.json`: once as the host guest's `code`, and once inside the private event's `allowedCodes`. Both must be replaced with the **same** strong random value, otherwise the host loses access to the private event. The easiest way:
+The placeholder `host-REPLACE_ME` appears **twice** in `data.json`: once as the host guest's `code`, and once inside the private event's `allowedCodes`. Replace both with a consistent value so the host appears in the private event guest list:
 
 ```bash
 # macOS
@@ -175,20 +181,32 @@ sed -i '' 's/host-REPLACE_ME/YOUR-RANDOM-CODE/g' data.json
 sed -i 's/host-REPLACE_ME/YOUR-RANDOM-CODE/g' data.json
 ```
 
-Generate a strong code with:
+Generate a value with:
 
 ```bash
 openssl rand -hex 12
 # example output: a3f9c2d1b4e7f8a0c5d6e9f2
 ```
 
-Until you replace it, `host-REPLACE_ME` is the publicly-known admin code for anyone who clones this repo.
+**Also remove the demo guests** (`demo-alex`, `demo-jordan`, `demo-taylor`, `demo-morgan`, `demo-casey`) from `data.json` before seeding — strangers with the repo can use their codes to view your event page.
 
-### 8. Deploy to Vercel
+### 8. Set `ADMIN_PASSWORD`
+
+Generate a strong admin password and add it to your environment variables:
+
+```bash
+openssl rand -base64 18
+```
+
+Set `ADMIN_PASSWORD` in Vercel → Project Settings → Environment Variables (or in `.env.local` for local dev). This is the password you will enter on the admin login screen.
+
+Optionally set `ADMIN_SESSION_SECRET` (a separate random 32+ byte string) to decouple session token signing from the password. Without it, rotating `ADMIN_PASSWORD` invalidates all live admin sessions.
+
+### 9. Deploy to Vercel
 
 Push to GitHub, import the repo in Vercel, and set the environment variables. Vercel will run `node scripts/apply-config.mjs` automatically as the build step.
 
-### 9. Seed the database
+### 10. Seed the database
 
 After your first successful deploy, run the seeder against your live URL:
 
@@ -200,10 +218,25 @@ The seeder reads `data.json`, POSTs it to `/api/seed` with the `x-seed-secret` h
 
 **Idempotent behavior:** events are only written on the first seed (when Redis has zero events). Subsequent re-seeds update guest records but preserve any email addresses guests have already submitted, and never overwrite the live events list. Safe to re-run.
 
-### 10. Access the site
+### 11. Access the site
 
 - **Guests** visit `/?code=<their invite code>`
-- **Host (admin panel)** visits `/?code=<the isHost code>` (the one you set in step 7)
+- **Admin panel** — visit `/?admin`, enter your `ADMIN_PASSWORD`, and you are in. Log out via the panel's logout button.
+
+**Resetting demo data:** if you need to wipe all Redis data and re-seed from scratch (e.g. after testing with demo guests), use the admin reset endpoint:
+
+```bash
+# 1. Log in and save the session cookie
+curl -c cookies.txt -X POST https://your-app.vercel.app/api/admin/login \
+  -H 'Content-Type: application/json' \
+  -d '{"password":"YOUR_ADMIN_PASSWORD"}'
+
+# 2. Reset — deletes all guests, RSVPs, and events from Redis
+curl -b cookies.txt -X POST https://your-app.vercel.app/api/admin/reset
+
+# 3. Re-seed with your real data
+SEED_SECRET=your-secret DEPLOY_URL=https://your-app.vercel.app npm run seed
+```
 
 ---
 
@@ -240,7 +273,10 @@ Key token categories:
 - **Typography** — display font (Noto Serif), label font (Inter), hierarchy rules
 - **Spacing** — section padding, component gaps, editorial margins
 
-After editing, run `npm run config` to regenerate the HTML. Do not edit the generated `public/index.html` / `public/calendar.html` directly — they are overwritten on the next run.
+After editing, run `npm run config` to regenerate the HTML. Do not edit the generated files directly — they are overwritten on the next run:
+
+- `public/index.html` / `public/calendar.html` — generated from `*.template.html` sources
+- `public/app.js` / `public/calendar-app.js` — application scripts extracted from the templates; edit the template sources, not these files
 
 ---
 
@@ -278,9 +314,9 @@ This runs both the static frontend and the serverless functions locally using yo
 
 ## Security notes
 
-- **Never commit secrets** — `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `RESEND_API_KEY`, and `SEED_SECRET` belong only in environment variables.
-- **Rotate the host code** — treat `isHost: true` code like a password. If it leaks, create a new guest record in the admin panel with `isHost: true` and a new code, then delete the old one.
-- **CSP is preset** — `vercel.json` ships with a strict Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, and Permissions-Policy. Review and tighten the CSP if you add third-party scripts.
+- **Never commit secrets** — `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `RESEND_API_KEY`, `SEED_SECRET`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` belong only in environment variables.
+- **Use a strong `ADMIN_PASSWORD`** — generate one with `openssl rand -base64 18`. Rotating `ADMIN_PASSWORD` invalidates all active admin sessions unless `ADMIN_SESSION_SECRET` is also set (see env table above).
+- **CSP is preset** — `vercel.json` ships with a strict Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, and Permissions-Policy. The `script-src` directive is now `'self'` (no `'unsafe-inline'`). Review and tighten further if you add third-party scripts.
 - The seed endpoint (`/api/seed`) is guarded by the `x-seed-secret` header. Once seeding is complete you don't need to expose it further.
 
 ---
@@ -289,11 +325,10 @@ This runs both the static frontend and the serverless functions locally using yo
 
 This is a hobby self-host model. Here are the inherent trade-offs so deployers aren't surprised:
 
-- **The host code is the only admin credential.** It is a bearer token — anyone who has it can access the admin panel. Keep `host-REPLACE_ME` replaced with a strong random value; rotate it if it leaks (create a new `isHost: true` guest, delete the old one).
-- **Invite codes are bearer tokens.** Anyone with a guest's invite code can act as that guest — RSVP on their behalf, see their private events. Treat invite codes like one-time passwords and share them carefully.
-- **CSP uses `'unsafe-inline'`** because the app ships as a single inline `<script>` block. XSS defense relies on the app's consistent use of `escapeHtml()` throughout, not on CSP. Do not add user-controlled HTML to the templates without escaping.
-- **Admin endpoints are not rate-limited.** Guest-facing endpoints (`/api/rsvp`, `/api/confirm`, `/api/guest`) are rate-limited; admin endpoints (`/api/admin/*`) are not — they rely solely on the host code for authorization.
-- **Remove demo guests before going live.** `data.json` ships with `demo-alex`, `demo-jordan`, `demo-taylor`, `demo-morgan`, and `demo-casey`. Delete them before seeding your real deployment so strangers can't access your event page.
+- **Admin is password + cookie auth.** The login screen (`/?admin`) accepts `ADMIN_PASSWORD` and issues an HttpOnly, SameSite=Strict, HMAC-signed session cookie (7-day TTL). All `api/admin/*` endpoints verify the cookie and check `Origin`/`Referer` against the server host (CSRF defence). The login endpoint is rate-limited to 5 attempts/min per IP; all other admin endpoints are limited to 10/min per IP. Use a strong `ADMIN_PASSWORD` and set `ADMIN_SESSION_SECRET` independently in production.
+- **Invite codes are 64-bit bearer tokens.** Anyone with a guest's invite URL can act as that guest — RSVP on their behalf, see their invited events. Treat invite codes like one-time passwords and share them carefully (link, not code visible in plain text). When `config.security.requireEmailForChanges` is enabled (default: true), a guest who has already saved an email address must re-confirm it before changing an RSVP.
+- **CSP `script-src 'self'`** — inline scripts have been extracted to `/app.js` and `/calendar-app.js`. The `style-src` directive still includes `'unsafe-inline'` (a known residual for inline styles in the templates); XSS defence relies on the app's consistent use of `escapeHtml()` throughout. Do not add user-controlled HTML to the templates without escaping.
+- **Remove demo guests before going live.** `data.json` ships with `demo-alex`, `demo-jordan`, `demo-taylor`, `demo-morgan`, and `demo-casey`. Delete them before seeding your real deployment so strangers can't access your event page. To wipe all demo data after testing, use the admin reset endpoint (see step 11 above).
 
 ---
 
