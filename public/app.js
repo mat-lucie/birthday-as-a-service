@@ -557,29 +557,66 @@
           </button>`;
       } else if (isEmailOnFile) {
         // #18 — email already saved on server. Changing email is admin-only (security: prevent overwrite via guessed code).
-        header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.emailOnFileStep, { color: C.soft, size: 9.5 });
-        body = `
-          <h2 style="margin:14px 0 14px;font-family:${SERIF};font-size:28px;font-weight:400;
-            line-height:1.05;letter-spacing:-0.015em;color:${C.primary};">
-            ${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileHeadlineItalic}</em>
-          </h2>
-          <p style="margin:0 0 8px;font-family:${SERIF};font-size:14px;line-height:1.5;color:${C.onSurfaceVar};">
-            ${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileBody}
-          </p>
-          <p style="margin:0;font-family:${SERIF};font-size:12px;line-height:1.5;color:${C.soft};font-style:italic;">
-            Ask the host to change it.
-          </p>
-          <div style="display:flex;gap:8px;margin-top:24px;">
-            <button data-modal-close style="flex:1;padding:14px;background:transparent;
-              color:${C.primary};box-shadow:inset 0 0 0 1px ${C.ghostInk};border-radius:0;
-              font-family:${SANS};font-size:11px;font-weight:500;letter-spacing:0.22em;
-              text-transform:uppercase;cursor:pointer;">${window.BIRTHDAY_CONFIG.strings.modal.cancelBtn}</button>
-            <button data-confirm-submit style="flex:2;padding:14px;background:${C.primaryC};
-              color:${C.surface};border-radius:0;font-family:${SANS};font-size:11px;
-              font-weight:500;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;">
-              ${window.BIRTHDAY_CONFIG.strings.modal.sendSameBtn}
-            </button>
-          </div>`;
+        // Proactive 2FA: when requireEmailForChanges is on, a returning guest must re-enter their email
+        // (that IS the second factor). Render the email input in that case; otherwise keep the no-input variant.
+        const S = window.BIRTHDAY_CONFIG.strings.modal;
+        const require2FA = window.BIRTHDAY_CONFIG.security?.requireEmailForChanges;
+        if (require2FA) {
+          header = renderLabel(S.confirmEmailStep, { color: C.soft, size: 9.5 });
+          const prefill = appState.providedEmail || appState.typedEmail || '';
+          const borderColor = appState.modalError ? C.error : 'rgba(0,46,36,0.20)';
+          body = `
+            <h2 style="margin:14px 0 14px;font-family:${SERIF};font-size:28px;font-weight:400;
+              line-height:1.05;letter-spacing:-0.015em;color:${C.primary};">
+              ${S.emailOnFileHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${S.emailOnFileHeadlineItalic}</em>
+            </h2>
+            <p style="margin:0 0 16px;font-family:${SERIF};font-size:14px;line-height:1.5;color:${C.onSurfaceVar};">
+              ${S.confirmEmailToContinue}
+            </p>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px;">
+              ${renderLabel(S.emailLabel, { size: 9.5, color: C.soft })}
+              <input data-confirm-email type="email" value="${escapeHtml(prefill)}"
+                autocomplete="email" autofocus placeholder="${S.emailPlaceholder}"
+                style="width:100%;padding:10px 0 12px;background:transparent;border:0;
+                border-bottom:1px solid ${borderColor};font-family:${SERIF};
+                font-size:19px;color:${C.primary};outline:none;"/>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button data-modal-close style="flex:1;padding:14px;background:transparent;
+                color:${C.primary};box-shadow:inset 0 0 0 1px ${C.ghostInk};border-radius:0;
+                font-family:${SANS};font-size:11px;font-weight:500;letter-spacing:0.22em;
+                text-transform:uppercase;cursor:pointer;">${S.cancelBtn}</button>
+              <button data-confirm-submit style="flex:2;padding:14px;background:${C.primaryC};
+                color:${C.surface};border-radius:0;font-family:${SANS};font-size:11px;
+                font-weight:500;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;">
+                ${S.sendSameBtn}
+              </button>
+            </div>`;
+        } else {
+          header = renderLabel(S.emailOnFileStep, { color: C.soft, size: 9.5 });
+          body = `
+            <h2 style="margin:14px 0 14px;font-family:${SERIF};font-size:28px;font-weight:400;
+              line-height:1.05;letter-spacing:-0.015em;color:${C.primary};">
+              ${S.emailOnFileHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${S.emailOnFileHeadlineItalic}</em>
+            </h2>
+            <p style="margin:0 0 8px;font-family:${SERIF};font-size:14px;line-height:1.5;color:${C.onSurfaceVar};">
+              ${S.emailOnFileBody}
+            </p>
+            <p style="margin:0;font-family:${SERIF};font-size:12px;line-height:1.5;color:${C.soft};font-style:italic;">
+              Ask the host to change it.
+            </p>
+            <div style="display:flex;gap:8px;margin-top:24px;">
+              <button data-modal-close style="flex:1;padding:14px;background:transparent;
+                color:${C.primary};box-shadow:inset 0 0 0 1px ${C.ghostInk};border-radius:0;
+                font-family:${SANS};font-size:11px;font-weight:500;letter-spacing:0.22em;
+                text-transform:uppercase;cursor:pointer;">${S.cancelBtn}</button>
+              <button data-confirm-submit style="flex:2;padding:14px;background:${C.primaryC};
+                color:${C.surface};border-radius:0;font-family:${SANS};font-size:11px;
+                font-weight:500;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;">
+                ${S.sendSameBtn}
+              </button>
+            </div>`;
+        }
       } else {
         // default — first-time email entry
         header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.defaultStep, { color: C.onSurfaceVar });
@@ -1890,7 +1927,25 @@
       // Determine email to send
       let email = null;
       if (appState.modalState === 'emailOnFile') {
-        // Use server-stored email (API picks it up from guest record)
+        // Proactive 2FA: when requireEmailForChanges is on, the guest sees an email input
+        // (rendered by renderConfirmModal). Read it here just like the default path.
+        // When the flag is off, no input is shown and email stays null — server uses saved email.
+        if (window.BIRTHDAY_CONFIG.security?.requireEmailForChanges) {
+          // If a prior RSVP-2FA prompt cached the email this session, try to reuse it;
+          // but always prefer what's currently in the input so the guest can correct it.
+          const input = document.querySelector('[data-confirm-email]');
+          const typed = (input?.value || appState.providedEmail || '').trim();
+          if (!typed || !typed.includes('@')) {
+            appState.modalError = window.BIRTHDAY_CONFIG.strings.modal.invalidEmail;
+            appState.modalState = 'emailOnFile'; // stay in emailOnFile so input re-renders
+            appState.typedEmail = typed;
+            rerender();
+            return;
+          }
+          appState.typedEmail = typed;
+          email = typed;
+        }
+        // flag OFF → email stays null; API will use the saved email on the guest record
       } else {
         const input = document.querySelector('[data-confirm-email]');
         const typed = (input?.value || '').trim();
@@ -1919,6 +1974,17 @@
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
+          // Reactive safety net: 2FA gate fired despite our proactive check
+          // (e.g. email mismatch, or flag flipped on between page load and submit).
+          // Route the guest back to email-entry so they can provide/correct it.
+          if (res.status === 403 && err.code === 'EMAIL_REQUIRED') {
+            appState.providedEmail = null; // clear any stale cached value
+            appState.modalState = 'emailOnFile'; // emailOnFile renders the input when flag is on
+            appState.typedEmail = '';
+            appState.modalError = window.BIRTHDAY_CONFIG.strings.modal.confirmEmailMismatch;
+            rerender();
+            return;
+          }
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.modal.errorDefault);
         }
         // Success: capture confirmed snapshot for the success screen

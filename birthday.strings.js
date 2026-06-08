@@ -282,6 +282,14 @@ export default {
     /** Send button */
     sendSameBtn:      'Yes, send →',
 
+    // ── Email on file + 2FA ─────────────────────────────────────────────────
+    /** Step label when 2FA re-entry is required for returning guest */
+    confirmEmailStep:        'Verify your email',
+    /** Prompt shown above the email input when 2FA flag is on for a returning guest */
+    confirmEmailToContinue:  'Enter the email on file to continue.',
+    /** Hint shown when the server rejects the email (403 reactive path) */
+    confirmEmailMismatch:    "That email didn't match. Try again.",
+
     // ── Validation ─────────────────────────────────────────────────
     /** Inline error when typed email is invalid */
     invalidEmail:     'Invalid email. Please double-check.',

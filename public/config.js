@@ -145,6 +145,9 @@ window.BIRTHDAY_CONFIG = {
       "emailOnFileBody": "It's the email you used last time.",
       "cancelBtn": "Cancel",
       "sendSameBtn": "Yes, send →",
+      "confirmEmailStep": "Verify your email",
+      "confirmEmailToContinue": "Enter the email on file to continue.",
+      "confirmEmailMismatch": "That email didn't match. Try again.",
       "invalidEmail": "Invalid email. Please double-check."
     },
     "admin": {
