@@ -1,0 +1,21 @@
+{
+  "name": "birthday-as-a-service",
+  "description": "Self-host birthday-week RSVP site — edit one config file, deploy to Vercel.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mat-lucie/birthday-as-a-service.git"
+  },
+  "scripts": {
+    "config": "node scripts/apply-config.mjs",
+    "seed": "node seed-data.js"
+  },
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "resend": "^6.10.0"
+  }
+}

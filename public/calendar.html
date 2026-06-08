@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sam's Birthday Week · the calendar</title>
+  <meta name="description" content="Scroll through time. Closest first, furthest below. Each day announces itself with its number; the rail marks the passage of days.">
+  <meta property="og:title" content="Sam's Birthday Week · the calendar">
+  <meta property="og:description" content="Scroll through time. Closest first, furthest below. Each day announces itself with its number; the rail marks the passage of days.">
+  <meta property="og:type" content="website">
+
+  <script src="/config.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --surface:           #fcf9ef;
+      --surface-low:       #f7f4e9;
+      --surface-2:         #f1eee4;
+      --surface-3:         #ebe8de;
+      --primary:           #002e24;
+      --primary-c:         #034638;
+      --on-primary-c:      #7ab3a1;
+      --secondary-c:       #d5e2df;
+      --tertiary-fixed:    #e0e5cc;
+      --sage:              #98d2bf;
+      --ink:               #1c1c16;
+      --ink-variant:       #404945;
+      --soft:              #7a8a85;
+      --ghost:             rgba(0, 46, 36, 0.12);
+      --ghost-soft:        rgba(0, 46, 36, 0.07);
+      --ghost-ink:         rgba(0, 46, 36, 0.20);
+      --shadow-card:       0px 20px 40px rgba(0, 46, 36, 0.06);
+
+      --serif: 'Noto Serif', Georgia, serif;
+      --sans:  'Inter', system-ui, sans-serif;
+
+      --page-pad-x: 1.5rem;
+      --rail-x: 5.25rem;       /* where the timeline spine sits, from the left edge */
+    }
+
+    @media (min-width: 760px) {
+      :root {
+        --page-pad-x: 5.5rem;
+        --rail-x: 11rem;
+      }
+    }
+
+    * , *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--serif);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+    }
+
+    /* Subtle vellum grain — paper, not pixels */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.40;
+      background-image:
+        radial-gradient(rgba(0, 46, 36, 0.04) 1px, transparent 1px),
+        radial-gradient(rgba(0, 46, 36, 0.03) 1px, transparent 1px);
+      background-size: 3px 3px, 7px 7px;
+      background-position: 0 0, 1px 1px;
+      mix-blend-mode: multiply;
+    }
+    main { position: relative; z-index: 1; }
+
+    ::selection { background: var(--primary-c); color: var(--surface); }
+
+    /* ─── Type system ─────────────────────────────────────────────── */
+    .label {
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 10.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-variant);
+    }
+    .label-sm { font-size: 9.5px; color: var(--soft); }
+    .label-em { color: var(--primary-c); }
+
+    /* ─── Masthead ────────────────────────────────────────────────── */
+    .masthead {
+      padding: 1.75rem var(--page-pad-x) 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+    .masthead .home {
+      text-decoration: none;
+      color: var(--ink-variant);
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 10.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding-bottom: 2px;
+      border-bottom: 1px solid var(--ghost);
+    }
+    .masthead .home:hover { color: var(--primary-c); border-color: var(--ghost-ink); }
+
+    /* ─── Hero ────────────────────────────────────────────────────── */
+    .hero {
+      padding: 2.5rem var(--page-pad-x) 2.25rem;
+      display: grid;
+      gap: 1.25rem;
+    }
+    .hero h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(2.6rem, 9vw, 4.5rem);
+      line-height: 0.96;
+      letter-spacing: -0.025em;
+      color: var(--primary);
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--primary-c);
+    }
+    .hero h1 .word-later {
+      display: inline-block;
+      position: relative;
+    }
+    .hero h1 .word-later::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0.1em;
+      height: 0.18em;
+      background: var(--sage);
+      opacity: 0.30;
+      z-index: -1;
+    }
+
+    .hero-lede {
+      margin: 0;
+      max-width: 36rem;
+      font-family: var(--serif);
+      font-size: clamp(0.97rem, 1.7vw, 1.1rem);
+      line-height: 1.6;
+      color: var(--ink-variant);
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.75rem 2rem;
+      margin-top: 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--ghost);
+    }
+    .hero-meta .number {
+      font-family: var(--serif);
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--primary-c);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    /* ─── Today plinth — the "you are here" marker ───────────────── */
+    .today {
+      position: relative;
+      padding: 1.25rem var(--page-pad-x) 1.5rem;
+      margin: 0 0 2rem;
+      background: var(--surface-low);
+    }
+    .today::before {
+      content: '';
+      position: absolute;
+      left: var(--rail-x);
+      top: -1px;
+      width: 11px;
+      height: 11px;
+      /* DESIGN_SPEC exception: timeline rail nodes are decorative markers, not UI controls.
+         The 0-radius rule applies to containers/controls; circular pins on a vertical rail
+         are a recognized cartographic primitive and read as "marker" not "button". */
+      border-radius: 50%;
+      background: var(--primary-c);
+      transform: translateX(-50%) translateY(-50%);
+      box-shadow: 0 0 0 6px var(--surface-low);
+    }
+    .today .row {
+      display: grid;
+      grid-template-columns: calc(var(--rail-x) - var(--page-pad-x)) 1fr;
+      gap: 1.25rem;
+      align-items: baseline;
+    }
+    .today .stamp {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 2.25rem;
+      letter-spacing: -0.02em;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: right;
+    }
+    .today .stamp small {
+      display: block;
+      font-family: var(--sans);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--soft);
+      margin-top: 6px;
+      font-variant-numeric: normal;
+    }
+    .today .text {
+      font-family: var(--serif);
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--ink-variant);
+    }
+    .today .text strong {
+      color: var(--primary);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* ─── Timeline ────────────────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding: 0 var(--page-pad-x) 6rem;
+    }
+    /* The spine — hairline through the page, anchored to var(--rail-x) */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: var(--rail-x);
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background:
+        linear-gradient(
+          to bottom,
+          var(--ghost-ink) 0%,
+          var(--ghost) 35%,
+          var(--ghost-soft) 100%
+        );
+    }
+    .timeline::after {
+      /* Terminal flourish — the spine fades into a soft chevron at the bottom */
+      content: '';
+      position: absolute;
+      left: var(--rail-x);
+      bottom: -2px;
+      width: 7px;
+      height: 7px;
+      transform: translateX(-50%) rotate(45deg);
+      border-right: 1px solid var(--ghost-soft);
+      border-bottom: 1px solid var(--ghost-soft);
+    }
+
+    /* Distance threshold dividers ("Later in the week", etc.) */
+    .threshold {
+      display: grid;
+      grid-template-columns: calc(var(--rail-x) - var(--page-pad-x)) 1fr;
+      gap: 1.25rem;
+      align-items: center;
+      margin: 2.25rem 0 1rem;
+    }
+    .threshold .marker {
+      text-align: right;
+      font-family: var(--sans);
+      font-size: 9px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+    .threshold .heading {
+      position: relative;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 1.4rem;
+      color: var(--primary-c);
+      letter-spacing: -0.005em;
+    }
+    .threshold .heading::after {
+      content: '';
+      position: absolute;
+      left: -3rem;
+      top: 50%;
+      width: 0.5rem;
+      height: 1px;
+      background: var(--primary-c);
+      transform: translateY(-50%);
+    }
+
+    /* Day group — date numeral on rail, event card on right */
+    .day {
+      position: relative;
+      display: grid;
+      grid-template-columns: calc(var(--rail-x) - var(--page-pad-x)) 1fr;
+      gap: 1.25rem;
+      padding: 1.5rem 0;
+      align-items: start;
+    }
+
+    .day .date {
+      text-align: right;
+      position: sticky;
+      top: 1.5rem;
+    }
+    .day .date .num {
+      display: block;
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(2.6rem, 5vw, 3.75rem);
+      letter-spacing: -0.03em;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 0.9;
+    }
+    .day .date .weekday {
+      display: block;
+      margin-top: 0.4rem;
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 10px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-variant);
+    }
+    .day .date .month {
+      display: block;
+      margin-top: 0.2rem;
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+    .day .date .distance {
+      display: block;
+      margin-top: 0.85rem;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 0.78rem;
+      color: var(--soft);
+      letter-spacing: 0;
+    }
+
+    .day .pillar {
+      position: absolute;
+      left: var(--rail-x);
+      top: 1.75rem;
+      width: 10px;
+      height: 10px;
+      transform: translateX(-50%);
+      background: var(--surface);
+      box-shadow:
+        inset 0 0 0 1px var(--primary-c),
+        0 0 0 6px var(--surface);
+    }
+    .day.private .pillar {
+      background: var(--primary-c);
+    }
+
+    .day .events {
+      display: grid;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    /* Per-day "from today" fade so further events sit a touch quieter */
+    .day[data-fade="1"] { opacity: 1; }
+    .day[data-fade="2"] { opacity: 0.97; }
+    .day[data-fade="3"] { opacity: 0.94; }
+    .day[data-fade="4"] { opacity: 0.92; }
+    .day[data-fade="5"] { opacity: 0.90; }
+    .day[data-fade="6"] { opacity: 0.88; }
+    .day[data-fade="7"] { opacity: 0.86; }
+
+    /* ─── Event card (calendar style — no rounded corners) ─────── */
+    .card {
+      position: relative;
+      padding: 1.25rem 1.25rem 1.15rem;
+      background: rgba(255, 255, 255, 0.80);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-card);
+      transition: background 0.3s ease, transform 0.3s cubic-bezier(.2,.7,.2,1);
+    }
+    .card.private {
+      background: rgba(224, 229, 204, 0.55);
+    }
+    .card:hover {
+      background: rgba(255, 255, 255, 0.92);
+      transform: translateY(-1px);
+    }
+    .card.private:hover {
+      background: rgba(224, 229, 204, 0.78);
+    }
+
+    .card .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--tertiary-fixed);
+      color: var(--primary-c);
+      padding: 4px 8px;
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 9.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 0.65rem;
+    }
+    .card .badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      background: var(--primary-c);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(1.35rem, 2.5vw, 1.55rem);
+      line-height: 1.15;
+      letter-spacing: -0.005em;
+      color: var(--primary);
+    }
+
+    .card .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.1rem;
+      margin-top: 0.6rem;
+    }
+    .card .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--sans);
+      font-size: 11.5px;
+      color: var(--ink-variant);
+    }
+    .card .meta-item .dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: var(--primary-c);
+    }
+    .card .meta-item a {
+      color: var(--ink-variant);
+      text-decoration: none;
+      border-bottom: 1px solid var(--ghost);
+      padding-bottom: 1px;
+    }
+    .card .meta-item a:hover { border-color: var(--ghost-ink); }
+
+    .card .desc {
+      margin: 0.75rem 0 0;
+      font-family: var(--serif);
+      font-size: 0.93rem;
+      line-height: 1.55;
+      color: var(--ink-variant);
+    }
+
+    .card .note {
+      margin: 0.85rem 0 0;
+      padding: 0.65rem 0 0;
+      border-top: 1px solid var(--ghost-soft);
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--primary-c);
+    }
+    .card .note::before {
+      content: '“';
+      font-size: 1.1em;
+      color: var(--primary-c);
+      margin-right: 2px;
+    }
+    .card .note::after { content: '”'; color: var(--primary-c); margin-left: 2px; }
+
+    .card .stripe {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--primary-c);
+      opacity: 0;
+    }
+    .card.private .stripe { opacity: 1; }
+
+    .card .time {
+      font-family: var(--sans);
+      font-size: 11.5px;
+      letter-spacing: 0.04em;
+      color: var(--ink-variant);
+      font-variant-numeric: tabular-nums;
+    }
+    .card .time .sep {
+      margin: 0 6px;
+      color: var(--soft);
+    }
+
+    .card .dress {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0.85rem;
+      padding: 5px 9px;
+      background: var(--tertiary-fixed);
+      color: var(--primary);
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    /* Coda — the "and then, silence" footer */
+    .coda {
+      position: relative;
+      margin-top: 4rem;
+      padding: 2.25rem var(--page-pad-x) 4rem;
+      text-align: center;
+    }
+    .coda .line {
+      display: inline-block;
+      width: 1.5rem;
+      height: 1px;
+      background: var(--ghost-ink);
+      vertical-align: middle;
+      margin: 0 0.6rem;
+    }
+    .coda p {
+      margin: 0;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 0.95rem;
+      color: var(--soft);
+      letter-spacing: 0;
+    }
+
+    /* ─── Reveal animations ──────────────────────────────────────── */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: var(--final-opacity, 1); transform: none; }
+    }
+    .reveal {
+      animation: rise 0.7s cubic-bezier(.2,.7,.2,1) both;
+    }
+    .reveal-1 { animation-delay: 0.05s; }
+    .reveal-2 { animation-delay: 0.15s; }
+    .reveal-3 { animation-delay: 0.25s; }
+    .reveal-4 { animation-delay: 0.35s; }
+    .reveal-5 { animation-delay: 0.45s; }
+    .reveal-6 { animation-delay: 0.55s; }
+    .reveal-7 { animation-delay: 0.65s; }
+    .reveal-8 { animation-delay: 0.75s; }
+
+    /* Mobile compaction */
+    @media (max-width: 480px) {
+      .day {
+        grid-template-columns: 3.5rem 1fr;
+        gap: 0.85rem;
+      }
+      :root {
+        --rail-x: 4.85rem;
+      }
+      .today .row {
+        grid-template-columns: 3.5rem 1fr;
+        gap: 0.85rem;
+      }
+      .threshold {
+        grid-template-columns: 3.5rem 1fr;
+        gap: 0.85rem;
+      }
+      .threshold .heading::after { display: none; }
+      .day .date .num { font-size: 2.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <span class="label">Sam · 30</span>
+      <a class="home" id="back-link" href="/">← Back</a>
+    </header>
+
+    <section class="hero">
+      <span class="label label-em reveal reveal-1">The calendar</span>
+      <h1 class="reveal reveal-2">
+        One week,<br/>
+        <em>in order.</em><br/>
+        Today first — <span class="word-later">later</span>, later.
+      </h1>
+      <p class="hero-lede reveal reveal-3">
+        Scroll through time. Closest first, furthest below. Each day announces itself with its number; the rail marks the passage of days.
+      </p>
+      <div class="hero-meta reveal reveal-4">
+        <div>
+          <span class="number" id="countdown">—</span>
+          <div class="label label-sm" style="margin-top:0.4rem;">days until it starts</div>
+        </div>
+        <div>
+          <div class="label">June 1 — 7, 2026</div>
+          <div class="label label-sm" style="margin-top:0.4rem;" id="event-summary">loading…</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="today reveal reveal-5">
+      <div class="row">
+        <div class="stamp">
+          <span id="today-num">—</span>
+          <small id="today-month">—</small>
+        </div>
+        <div class="text">
+          <strong>Today.</strong> Everything below hasn't happened yet. Keep scrolling to move forward through the week.
+        </div>
+      </div>
+    </section>
+
+    <section class="timeline" id="timeline">
+      <!-- Day groups injected here -->
+    </section>
+
+    <section class="coda reveal reveal-8">
+      <p>
+        <span class="line"></span>
+        And then, silence — until the next trip around the sun.
+        <span class="line"></span>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const _CAL = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+    const WEEKDAYS_ES_LONG  = (_CAL.weekdaysLong  || 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday').split(',');
+    const WEEKDAYS_ES_SHORT = (_CAL.weekdaysShort || 'Sun,Mon,Tue,Wed,Thu,Fri,Sat').split(',');
+    const MONTHS_ES_SHORT   = (_CAL.monthsShort   || 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec').split(',');
+
+    // The "now" used by the page. The DESIGN_SPEC project has currentDate 2026-05-20.
+    // We honor whatever today actually is — if it's before the week, all events are future.
+    const NOW = new Date();
+    NOW.setHours(0,0,0,0);
+
+    function dateAt(dateStr) {
+      // Local-noon parse so we sit in the middle of the day regardless of TZ.
+      return new Date(dateStr + 'T12:00:00');
+    }
+
+    function daysBetween(dateStrA, ref) {
+      const a = dateAt(dateStrA);
+      a.setHours(0,0,0,0);
+      return Math.round((a - ref) / (1000 * 60 * 60 * 24));
+    }
+
+    function formatTimeRange(start, end) {
+      if (!end) return start;
+      return `${start}<span class="sep">→</span>${end}`;
+    }
+
+    function distancePhrase(days) {
+      const C = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+      if (days < 0) {
+        const abs = Math.abs(days);
+        return `${abs} ${abs === 1 ? (C.distancePastDaySuffix || 'day ago') : (C.distancePastSuffix || 'days ago')}`;
+      }
+      if (days === 0) return C.distanceToday || 'today';
+      if (days === 1) return C.distanceTomorrow || 'tomorrow';
+      if (days < 7) return `${C.distanceNextDaysPrefix || 'in'} ${days} ${C.distanceNextDaysSuffix || 'days'}`;
+      if (days < 14) return `${C.distanceNextDaysPrefix || 'in'} 1 ${C.distanceWeekSuffix || 'week'}`;
+      return `${C.distanceWeeksPrefix || 'in'} ${days} ${C.distanceWeeksSuffix || 'days'}`;
+    }
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function renderEventCard(event, guestCode) {
+      const isPrivate = event.visibility === 'private';
+      // /api/guest already resolves personalNotes[code] → personalNote for this guest
+      // and strips the full map. Falls back to the old shape just in case.
+      const personalNote = event.personalNote || event.personalNotes?.[guestCode];
+      const dressChip = event.dressCode
+        ? `<div class="dress">${escapeHtml(event.dressCode)}</div>`
+        : '';
+      const noteHtml = personalNote
+        ? `<p class="note">${escapeHtml(personalNote)}</p>`
+        : '';
+      const badge = isPrivate
+        ? `<div class="badge">${(window.BIRTHDAY_CONFIG?.strings?.calendar?.privateBadge || 'For you')}</div>`
+        : '';
+      const locHtml = event.mapsUrl
+        ? `<a href="${escapeHtml(event.mapsUrl)}" target="_blank" rel="noreferrer">${escapeHtml(event.location)}</a>`
+        : escapeHtml(event.location);
+
+      return `<article class="card ${isPrivate ? 'private' : ''}">
+        <span class="stripe"></span>
+        ${badge}
+        <h3>${escapeHtml(event.title)}</h3>
+        <div class="meta">
+          <span class="meta-item time">${formatTimeRange(event.time, event.endTime)}</span>
+          <span class="meta-item"><span class="dot"></span>${locHtml}</span>
+          ${typeof event.attendees === 'number'
+            ? `<span class="meta-item">${event.attendees} ${event.attendees === 1 ? (window.BIRTHDAY_CONFIG?.strings?.calendar?.personSingular || 'person') : (window.BIRTHDAY_CONFIG?.strings?.calendar?.personPlural || 'people')}</span>`
+            : ''}
+        </div>
+        <p class="desc">${escapeHtml(event.description)}</p>
+        ${noteHtml}
+        ${dressChip}
+      </article>`;
+    }
+
+    function renderDayGroup(dateStr, events, guestCode, index, daysFromNow) {
+      const d = dateAt(dateStr);
+      const num = String(d.getDate()).padStart(2, '0');
+      const weekday = WEEKDAYS_ES_LONG[d.getDay()];
+      const month = MONTHS_ES_SHORT[d.getMonth()];
+      const fade = Math.min(7, Math.max(1, index + 1));
+      const hasPrivate = events.some(e => e.visibility === 'private');
+      const distLabel = distancePhrase(daysFromNow);
+
+      const revealClass = index < 7 ? `reveal reveal-${Math.min(7, index + 6)}` : '';
+
+      return `<div class="day ${hasPrivate ? 'private' : ''} ${revealClass}" data-fade="${fade}">
+        <span class="pillar" aria-hidden="true"></span>
+        <div class="date">
+          <span class="num">${num}</span>
+          <span class="weekday">${weekday}</span>
+          <span class="month">${month}</span>
+          <span class="distance">${escapeHtml(distLabel)}</span>
+        </div>
+        <div class="events">
+          ${events.map(e => renderEventCard(e, guestCode)).join('')}
+        </div>
+      </div>`;
+    }
+
+    function renderThreshold(text, marker) {
+      return `<div class="threshold reveal reveal-6">
+        <span class="marker">${escapeHtml(marker)}</span>
+        <span class="heading">${escapeHtml(text)}</span>
+      </div>`;
+    }
+
+    function buildTimeline(events, guestCode) {
+      // /api/guest has already filtered to this guest's visible set, so
+      // every event passed in is visible.
+      const visible = [...events].sort((a, b) => a.date.localeCompare(b.date));
+
+      // Group by date
+      const byDate = {};
+      visible.forEach(e => {
+        (byDate[e.date] = byDate[e.date] || []).push(e);
+      });
+      const dates = Object.keys(byDate).sort();
+
+      // Build with a "Later in the week" threshold inserted partway:
+      // place it AFTER the first ~⅓ of distinct dates (or after the 2nd day, whichever is larger).
+      const splitIdx = Math.max(2, Math.ceil(dates.length / 3));
+
+      let html = '';
+      dates.forEach((dateStr, i) => {
+        if (i === splitIdx) {
+          const remainingDays = daysBetween(dates[i], NOW);
+          const C = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+          const marker = remainingDays > 0
+            ? `${C.thresholdMarkerPrefix || '+'} ${remainingDays} ${C.thresholdMarkerSuffix || 'days'}`
+            : (C.thresholdMarkerNone || '—');
+          html += renderThreshold(C.thresholdHeading || 'Later in the week', marker);
+        }
+        const daysFromNow = daysBetween(dateStr, NOW);
+        html += renderDayGroup(dateStr, byDate[dateStr], guestCode, i, daysFromNow);
+      });
+
+      return { html, visibleCount: visible.length, total: events.length };
+    }
+
+    function renderTodayStamp() {
+      const num = document.getElementById('today-num');
+      const month = document.getElementById('today-month');
+      const d = new Date();
+      num.textContent = String(d.getDate()).padStart(2, '0');
+      const weekday = WEEKDAYS_ES_SHORT[d.getDay()];
+      const mo = MONTHS_ES_SHORT[d.getMonth()];
+      month.innerHTML = `${weekday} · ${mo}`;
+    }
+
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const guestCode = params.get('code');
+
+      renderTodayStamp();
+
+      const backLink = document.getElementById('back-link');
+      if (backLink && guestCode) backLink.href = `/?code=${encodeURIComponent(guestCode)}`;
+
+      const showError = (msg) => {
+        document.getElementById('timeline').innerHTML =
+          `<p style="font-family:var(--serif);font-style:italic;color:var(--soft);
+            text-align:center;padding:3rem 1rem;">${msg}</p>`;
+      };
+
+      if (!guestCode) {
+        const _C = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+        showError(`${_C.noCodeErrorPrefix || "This link doesn't know you. Ask"} ${window.BIRTHDAY_CONFIG?.host?.name || 'the host'} ${_C.noCodeErrorSuffix || 'for yours.'}`);
+        return;
+      }
+
+      let data;
+      try {
+        const res = await fetch(`/api/guest?code=${encodeURIComponent(guestCode)}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+        data = await res.json();
+      } catch (err) {
+        const _C = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+        showError(`${_C.noCodeErrorPrefix || "This link doesn't know you. Ask"} ${window.BIRTHDAY_CONFIG?.host?.name || 'the host'} ${_C.noCodeErrorSuffix || 'for yours.'}`);
+        return;
+      }
+
+      // /api/guest already filters private events by allowedCodes and strips
+      // the allowedCodes field, so visibility-gating in buildTimeline is a no-op
+      // here — every returned event is visible to this guest.
+      const events = data.events || [];
+      if (!events.length) return;
+
+      const firstDate = events.map(e => e.date).sort()[0];
+      const start = dateAt(firstDate);
+      start.setHours(0,0,0,0);
+
+      const days = Math.max(0, Math.round((start - NOW) / (1000 * 60 * 60 * 24)));
+      document.getElementById('countdown').textContent = days;
+
+      const { html, visibleCount } = buildTimeline(events, guestCode);
+      document.getElementById('timeline').innerHTML = html;
+
+      // forYou is set by /api/guest for private events the guest is invited to.
+      const privateCount = events.filter(e => e.forYou).length;
+      const _CS = window.BIRTHDAY_CONFIG?.strings?.calendar || {};
+      const summary = privateCount > 0
+        ? `${visibleCount} ${_CS.momentsLabel || 'moments'} · ${privateCount} ${_CS.momentsForYou || 'for you'}`
+        : `${visibleCount} ${_CS.momentsLabel || 'moments'}`;
+      document.getElementById('event-summary').textContent = summary;
+    }
+
+    load();
+  </script>
+</body>
+</html>

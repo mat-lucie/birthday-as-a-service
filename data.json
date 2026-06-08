@@ -1,0 +1,106 @@
+{
+  "events": [
+    {
+      "id": "morning-coffee-mon",
+      "title": "Morning Coffee",
+      "date": "2026-06-01",
+      "time": "08:30",
+      "endTime": "09:30",
+      "location": "The Rooftop Bar",
+      "mapsUrl": "https://maps.google.com/?q=The+Rooftop+Bar",
+      "description": "Start the week with coffee and great views.",
+      "attendees": 8,
+      "visibility": "public",
+      "allowPlusOne": true
+    },
+    {
+      "id": "brainstorm-session-tue",
+      "title": "Brainstorm Session",
+      "date": "2026-06-02",
+      "time": "14:00",
+      "endTime": "16:00",
+      "location": "Sam's Apartment",
+      "mapsUrl": "https://maps.google.com/?q=Sams+Apartment",
+      "description": "Casual brainstorming with snacks and drinks.",
+      "attendees": 0,
+      "visibility": "private",
+      "allowPlusOne": false,
+      "allowedCodes": [
+        "host-REPLACE_ME"
+      ]
+    },
+    {
+      "id": "park-picnic-wed",
+      "title": "Park Picnic",
+      "date": "2026-06-03",
+      "time": "12:00",
+      "endTime": "14:30",
+      "location": "Riverside Park",
+      "mapsUrl": "https://maps.google.com/?q=Riverside+Park",
+      "description": "Outdoor picnic with friends. Bring your favorite snack!",
+      "attendees": 15,
+      "visibility": "public",
+      "allowPlusOne": true
+    },
+    {
+      "id": "coffee-house-thu",
+      "title": "Coffee & Chat",
+      "date": "2026-06-04",
+      "time": "10:00",
+      "endTime": "11:00",
+      "location": "Downtown Coffee House",
+      "mapsUrl": "https://maps.google.com/?q=Downtown+Coffee+House",
+      "description": "Casual meet-up over coffee.",
+      "attendees": 0,
+      "visibility": "public",
+      "allowPlusOne": true
+    },
+    {
+      "id": "jazz-night-fri",
+      "title": "Jazz Night Celebration",
+      "date": "2026-06-05",
+      "time": "19:00",
+      "endTime": "22:00",
+      "location": "The Jazz Club",
+      "mapsUrl": "https://maps.google.com/?q=The+Jazz+Club",
+      "description": "Evening celebration with live jazz and cocktails.",
+      "attendees": 12,
+      "visibility": "public",
+      "dressCode": "smart casual",
+      "allowPlusOne": true
+    }
+  ],
+  "guests": [
+    {
+      "code": "host-REPLACE_ME",
+      "name": "Sam",
+      "gender": "m",
+      "isHost": true
+    },
+    {
+      "code": "demo-alex",
+      "name": "Alex",
+      "gender": "m"
+    },
+    {
+      "code": "demo-jordan",
+      "name": "Jordan",
+      "gender": "f"
+    },
+    {
+      "code": "demo-taylor",
+      "name": "Taylor",
+      "gender": "f"
+    },
+    {
+      "code": "demo-morgan",
+      "name": "Morgan",
+      "gender": "m"
+    },
+    {
+      "code": "demo-casey",
+      "name": "Casey",
+      "gender": "f"
+    }
+  ]
+}

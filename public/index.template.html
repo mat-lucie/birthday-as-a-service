@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="{{locale.htmlLang}}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{site.title}}</title>
+  <meta name="description" content="{{site.ogDescription}}">
+  <meta property="og:title" content="{{site.ogTitle}}">
+  <meta property="og:description" content="{{site.ogDescription}}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{site.domain}}">
+  <meta property="og:image" content="{{site.ogImageUrl}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{site.ogImageAlt}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{site.ogImageUrl}}">
+
+  <script src="/config.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --surface:                #fcf9ef;
+      --surface-low:            #f7f4e9;
+      --surface-2:              #f1eee4;
+      --surface-3:              #ebe8de;
+      --c-primary:              #002e24;
+      --c-primary-c:            #034638;
+      --c-on-primary-c:         #7ab3a1;
+      --c-secondary-c:          #d5e2df;
+      --c-tertiary-fixed:       #e0e5cc;
+      --c-sage:                 #98d2bf;
+      --ghost:                  rgba(0, 46, 36, 0.12);
+      --ghost-soft:             rgba(0, 46, 36, 0.08);
+      --ghost-ink:              rgba(0, 46, 36, 0.20);
+      --c-on-surface:           #1c1c16;
+      --c-on-surface-variant:   #404945;
+      --c-soft:                 #7a8a85;
+      --c-error:                #ba1a1a;
+      --shadow-card: 0px 20px 40px rgba(0, 46, 36, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--surface);
+      color: var(--c-on-surface);
+      font-family: 'Noto Serif', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+    }
+    button { font: inherit; color: inherit; background: transparent; border: 0; padding: 0; cursor: pointer; }
+    a { color: inherit; }
+    ::selection { background: var(--c-primary-c); color: var(--surface); }
+
+    /* ─── Animations ─────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .shimmer-text {
+      background: linear-gradient(
+        90deg,
+        rgba(3, 70, 56, 0.30) 0%,
+        rgba(3, 70, 56, 0.95) 45%,
+        rgba(3, 70, 56, 0.30) 100%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 2.4s ease-in-out infinite;
+    }
+
+    @keyframes page-enter {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page-enter   { animation: page-enter 0.6s cubic-bezier(.2,.7,.2,1) both; }
+    .page-enter-1 { animation-delay: 0.15s; }
+    .page-enter-2 { animation-delay: 0.30s; }
+    .page-enter-3 { animation-delay: 0.45s; }
+    .page-enter-4 { animation-delay: 0.60s; }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-in { animation: modal-in 0.32s cubic-bezier(.2,.7,.2,1) both; }
+
+    @keyframes backdrop-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .backdrop-in { animation: backdrop-in 0.28s ease both; }
+
+    @keyframes pulse-dot {
+      0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+      40%           { opacity: 1;    transform: scale(1); }
+    }
+    .pulse-dot   { animation: pulse-dot 1.2s ease-in-out infinite both; display: inline-block; }
+    .pulse-dot-2 { animation-delay: 0.15s; }
+    .pulse-dot-3 { animation-delay: 0.30s; }
+
+    @keyframes slide-up-cta {
+      from { transform: translateY(120%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .slide-up { animation: slide-up-cta 0.45s cubic-bezier(.2,.7,.2,1) both; }
+
+    @keyframes details-expand {
+      from { opacity: 0; max-height: 0; }
+      to   { opacity: 1; max-height: 320px; }
+    }
+    .details-expand { animation: details-expand 0.35s ease both; overflow: hidden; }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translate(-50%, 12px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .toast-in { animation: toast-in 0.25s ease both; }
+  </style>
+</head>
+<body data-palette="forest">
+  <div id="app"></div>
+
+  <script>
+    // ─── Color tokens (inline-style access) ──────────────────────
+    const C = {
+      surface:        '#fcf9ef',
+      surfaceLow:     '#f7f4e9',
+      surface2:       '#f1eee4',
+      surface3:       '#ebe8de',
+      primary:        '#002e24',
+      primaryC:       '#034638',
+      onPrimaryC:     '#7ab3a1',
+      secondaryC:     '#d5e2df',
+      tertiaryFixed:  '#e0e5cc',
+      sage:           '#98d2bf',
+      onSurface:      '#1c1c16',
+      onSurfaceVar:   '#404945',
+      soft:           '#7a8a85',
+      ghost:          'rgba(0,46,36,0.12)',
+      ghostSoft:      'rgba(0,46,36,0.08)',
+      ghostInk:       'rgba(0,46,36,0.20)',
+      error:          '#ba1a1a',
+    };
+    const SHADOW_CARD = '0px 20px 40px rgba(0, 46, 36, 0.06)';
+    const SERIF = "'Noto Serif', Georgia, serif";
+    const SANS  = "'Inter', system-ui, sans-serif";
+    const DESKTOP_BREAKPOINT = 900;
+    function isDesktop() { return window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches; }
+    function formatKitTime(hhmm) {
+      const [h, m] = hhmm.split(':').map(Number);
+      const ampm = h >= 12 ? 'pm' : 'am';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+    }
+
+    // ─── State ───────────────────────────────────────────────────
+    let appState = {
+      view: 'loading',          // 'loading' | 'timeline' | 'success' | 'error'
+      errorMessage: null,
+      data: null,
+      expandedCards: new Set(),
+      rsvpStates: {},           // { eventId: 'attending' | 'not-attending' }
+      rsvpErrors: {},           // { eventId: strings.rsvp.rsvpSaveError }
+      plusOneStates: {},        // { eventId: { enabled: bool, name: string } } — overrides server plusOne
+      hasEmailOnFile: false,    // from /api/guest hasEmail
+      knownEmail: null,         // server-stored email (we don't fetch the value but we know it exists)
+      typedEmail: '',           // for input persistence
+      hasConfirmedOnce: false,
+      confirmedEvents: [],      // last set of confirmed event objects (for success screen)
+      confirmedEmail: null,     // last email used in confirm (for success screen)
+      modalState: 'closed',     // 'closed' | 'default' | 'sending' | 'error' | 'emailOnFile'
+      modalError: null,
+      activeDay: null,          // 1..7 — overrides the default first-with-events when set by user click
+      stickyHasShown: false,    // true after the confirm strip has slid up at least once; suppresses re-animation
+      adminTab: 'eventos',      // 'eventos' | 'invitados' | 'confirmaciones' | 'mensaje'
+      adminPendientesOpen: new Set(), // event ids whose pendientes list is expanded in Confirmaciones
+      adminConfirmFilter: 'all',// 'all' | 'with-yes' | 'no-yes'
+      adminConfirmSearch: '',   // case-insensitive substring filter applied to chip names
+      adminChipPopover: null,   // null | { code, name, eventId, x, y }
+      adminToast: null,         // null | string (auto-clears via setTimeout)
+      adminData: null,          // { events, guests, rsvps } — loaded after admin mount
+      adminEdit: null,          // null | { mode, id, draft, saving, deleting, error }
+      guestEdit: null,          // null | { mode, originalCode, draft, saving, deleting, error }
+      broadcast: {
+        segment: 'all',         // 'all' | 'confirmed-any' | 'confirmed-event:<id>'
+        subject: '',
+        body: '',
+        recipientCount: null,
+        sending: false,
+        sentResult: null,
+        error: null,
+      },
+    };
+
+    // ─── Helpers ─────────────────────────────────────────────────
+    const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+    const WEEK_DAYS_ES = (window.BIRTHDAY_CONFIG?.strings?.calendar?.weekdaysShort || 'Sun,Mon,Tue,Wed,Thu,Fri,Sat').split(',');
+
+    function getCode() {
+      return new URLSearchParams(window.location.search).get('code');
+    }
+
+    // THE birthday — Saturday's Pelican lunch. Gets dark-forest hero treatment in cards.
+    const MAIN_EVENT_ID = 'comida-pelican-sat';
+    function isMainEvent(e) { return e?.id === MAIN_EVENT_ID; }
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function dayOfWeek(dateStr, startDateStr) {
+      const start = new Date(startDateStr + 'T12:00:00');
+      const d = new Date(dateStr + 'T12:00:00');
+      const diff = Math.round((d - start) / (1000 * 60 * 60 * 24));
+      return diff + 1; // 1..7 within the week
+    }
+    function weekdayShort(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      return WEEK_DAYS_ES[d.getDay()];
+    }
+    function timeAgo(iso) {
+      if (!iso) return '';
+      const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (secs < 60) return 'ahora';
+      const mins = Math.floor(secs / 60);
+      if (mins < 60) return `hace ${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `hace ${hrs}h`;
+      const days = Math.floor(hrs / 24);
+      return `hace ${days}d`;
+    }
+    function eventTitleWithWeekday(e) {
+      const wd = weekdayShort(e.date);
+      const title = e.title || '';
+      // Skip prefix if the title already starts with a day name (e.g., "Blessed Monday")
+      if (/^(mon|tue|wed|thu|fri|sat|sun)/i.test(title)) return title;
+      if (/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(title)) return title;
+      return `${wd} · ${title}`;
+    }
+    function isPastEvent(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      d.setHours(0,0,0,0);
+      return d < TODAY;
+    }
+    function daysUntil(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      d.setHours(0,0,0,0);
+      return Math.ceil((d - TODAY) / (1000 * 60 * 60 * 24));
+    }
+    function getEventRsvp(eventId) {
+      if (appState.rsvpStates[eventId] !== undefined) return appState.rsvpStates[eventId];
+      const ev = appState.data?.events.find(e => e.id === eventId);
+      return ev?.rsvp?.status || null;
+    }
+    // Returns { enabled, name } if the user is bringing a +1, else null.
+    // Local state overrides server data so toggling is instant.
+    function getEventPlusOne(eventId) {
+      if (appState.plusOneStates[eventId] !== undefined) return appState.plusOneStates[eventId];
+      const ev = appState.data?.events.find(e => e.id === eventId);
+      if (!ev?.rsvp?.plusOne) return null;
+      return { enabled: true, name: ev.rsvp.plusOne.name || '' };
+    }
+    function attendingEventIds() {
+      return Object.entries(appState.rsvpStates)
+        .filter(([, s]) => s === 'attending')
+        .map(([id]) => id);
+    }
+    function buildWeekDays(events, startDateStr) {
+      // 7 entries Mon..Sun. hasMain marks the day containing the cumple event.
+      const buckets = Array.from({ length: 7 }, () => ({ count: 0, hasPrivate: false, hasMain: false }));
+      events.forEach(e => {
+        const d = dayOfWeek(e.date, startDateStr);
+        if (d >= 1 && d <= 7) {
+          buckets[d - 1].count++;
+          if (e.visibility === 'private' || e.forYou) buckets[d - 1].hasPrivate = true;
+          if (isMainEvent(e)) buckets[d - 1].hasMain = true;
+        }
+      });
+      return buckets.map((b, i) => {
+        const dateObj = new Date(new Date(startDateStr + 'T12:00:00').getTime() + i * 24*60*60*1000);
+        const wd = WEEK_DAYS_ES[dateObj.getDay()];
+        return { day: i + 1, weekday: wd, eventCount: b.count, hasPrivate: b.hasPrivate, hasMain: b.hasMain, dateNum: dateObj.getDate() };
+      });
+    }
+    function activeDay(events, startDateStr) {
+      // First day with events, else 1
+      const days = buildWeekDays(events, startDateStr);
+      const first = days.find(d => d.eventCount > 0);
+      return first ? first.day : 1;
+    }
+
+    // ─── Icon: inline SVGs (hairline, currentColor) ──────────────
+    function icon(name, size = 14, color = 'currentColor') {
+      const paths = {
+        clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        pin:   '<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+        shirt: '<path d="M4 7l4-3 2 2h4l2-2 4 3-2 4-2-1v10H8V10l-2 1z"/>',
+        arrow: '<path d="M5 12h14M13 5l7 7-7 7"/>',
+        check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+        x:     '<path d="M6 6l12 12M18 6L6 18"/>',
+      };
+      return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+        stroke="${color}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+        style="flex-shrink:0;vertical-align:middle">${paths[name] || ''}</svg>`;
+    }
+
+    // ─── Atoms ───────────────────────────────────────────────────
+    function renderLabel(text, opts = {}) {
+      const { color = C.onSurfaceVar, size = 10.5, tracking = '0.22em' } = opts;
+      return `<span style="font-family:${SANS};font-weight:500;font-size:${size}px;
+        letter-spacing:${tracking};text-transform:uppercase;color:${color};">${escapeHtml(text)}</span>`;
+    }
+
+    function renderParaTiBadge() {
+      return `<span style="display:inline-flex;align-items:center;gap:6px;
+        background:${C.tertiaryFixed};color:${C.primaryC};padding:4px 8px;
+        font-family:${SANS};font-weight:600;font-size:9.5px;letter-spacing:0.22em;text-transform:uppercase;">
+        <span style="width:5px;height:5px;background:${C.primaryC};display:inline-block;"></span>
+        {{strings.rsvp.paraTiBadge}}
+      </span>`;
+    }
+
+    // The birthday badge — stronger than "For you", lives on the headliner card only.
+    // Uses sage on deep forest to read as "you are inside the main event."
+    function renderCumpleBadge() {
+      return `<span style="display:inline-flex;align-items:center;gap:7px;
+        background:${C.tertiaryFixed};color:${C.primary};padding:5px 10px;
+        font-family:${SANS};font-weight:700;font-size:10px;letter-spacing:0.28em;text-transform:uppercase;">
+        <span style="width:6px;height:6px;background:${C.primary};display:inline-block;"></span>
+        {{strings.rsvp.cumpleBadge}}
+      </span>`;
+    }
+
+    function renderDressChip(text) {
+      return `<span style="display:inline-flex;align-items:center;gap:6px;
+        background:${C.tertiaryFixed};color:${C.primary};padding:5px 9px;
+        font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;">
+        ${icon('shirt', 11)} ${escapeHtml(text)}
+      </span>`;
+    }
+
+    // +1 row shown beneath an "attending" event when the host allows plus-ones.
+    function renderPlusOneRow(eventId) {
+      const state = getEventPlusOne(eventId);
+      const enabled = !!state?.enabled;
+      const name = state?.name || '';
+      return `<div style="margin-top:22px;padding-top:0;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:${SANS};font-size:12px;letter-spacing:0.04em;color:${C.onSurfaceVar};">
+          <input type="checkbox" data-plus-one-toggle="${eventId}" ${enabled ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:${C.primaryC};"/>
+          <span>{{strings.rsvp.plusOneLabel}}</span>
+        </label>
+        ${enabled ? `<div class="details-expand"><input type="text" data-plus-one-name="${eventId}" placeholder="{{strings.rsvp.plusOnePlaceholder}}" value="${escapeHtml(name)}" style="margin-top:10px;margin-left:26px;width:calc(100% - 26px);font-family:${SERIF};font-style:italic;font-size:14px;color:${C.primary};background:transparent;border:0;border-bottom:1px solid ${C.ghostInk};padding:6px 0;outline:none;"/></div>` : ''}
+      </div>`;
+    }
+
+    function renderRsvpBtn(active, variant, eventId, label) {
+      const isYes = variant === 'yes';
+      let bg, fg, shadow;
+      if (isYes && active)        { bg = C.primaryC;     fg = C.surface; shadow = 'none'; }
+      else if (isYes && !active)  { bg = C.surface;      fg = C.primary; shadow = 'inset 0 0 0 1px rgba(0,46,36,0.30)'; }
+      else if (!isYes && active)  { bg = C.onSurfaceVar; fg = C.surface; shadow = 'none'; }
+      else                        { bg = 'transparent';  fg = C.soft;    shadow = 'inset 0 0 0 1px rgba(0,46,36,0.18)'; }
+      return `<button data-rsvp="${eventId}" data-action="${variant}" style="
+        padding:10px 18px;border-radius:0;background:${bg};color:${fg};box-shadow:${shadow};
+        font-family:${SANS};font-size:11px;font-weight:500;letter-spacing:0.18em;
+        text-transform:uppercase;white-space:nowrap;
+        transition:background .25s,color .25s,box-shadow .25s;">
+        ${active && isYes ? '<span style="margin-right:8px;">✓</span>' : ''}${escapeHtml(label)}
+      </button>`;
+    }
+
+    // ─── EventCard ───────────────────────────────────────────────
+    function renderEventCard(event, startDateStr) {
+      const isPrivate = event.visibility === 'private' || event.forYou;
+      const isMain = isMainEvent(event);
+      const isExpanded = appState.expandedCards.has(event.id);
+      const rsvpStatus = getEventRsvp(event.id);
+      const yes = rsvpStatus === 'attending';
+      const no  = rsvpStatus === 'not-attending';
+      const past = isPastEvent(event.date);
+      const day = dayOfWeek(event.date, startDateStr);
+      const weekday = weekdayShort(event.date);
+      const rsvpError = appState.rsvpErrors[event.id];
+
+      // Past event variant (#19) — separate render
+      if (past) return renderPastEventCard(event, day, weekday);
+
+      // Main event flips to deep forest with light text; everyone else keeps the parchment palette.
+      const titleColor = isMain ? C.surface : C.primary;
+      const bodyColor  = isMain ? 'rgba(252,249,239,0.88)' : C.onSurfaceVar;
+      const softColor  = isMain ? 'rgba(252,249,239,0.62)' : C.onSurfaceVar;
+      const accentColor = isMain ? C.onPrimaryC : C.primaryC;
+      const lineColor   = isMain ? 'rgba(252,249,239,0.18)' : C.ghost;
+
+      // Time string
+      const timeStr = event.endTime ? `${event.time} – ${event.endTime}` : event.time;
+
+      // Location (clickable if mapsUrl)
+      const locationHtml = event.mapsUrl
+        ? `<a href="${escapeHtml(event.mapsUrl)}" target="_blank" rel="noreferrer"
+             style="display:inline-flex;align-items:center;gap:6px;font-family:${SANS};font-size:11.5px;
+             color:${softColor};text-decoration:none;border-bottom:1px solid ${lineColor};padding-bottom:1px;">
+             ${icon('pin', 13, softColor)} ${escapeHtml(event.location)}
+           </a>`
+        : `<span style="display:inline-flex;align-items:center;gap:6px;font-family:${SANS};font-size:11.5px;
+             color:${softColor};">
+             ${icon('pin', 13, softColor)} ${escapeHtml(event.location)}
+           </span>`;
+
+      const attendeesHtml = typeof event.attendees === 'number'
+        ? `<span style="display:inline-flex;align-items:center;gap:6px;font-family:${SANS};font-size:11.5px;color:${softColor};">
+             <span style="display:inline-block;width:5px;height:5px;background:${accentColor};"></span>
+             ${event.attendees} ${event.attendees === 1 ? window.BIRTHDAY_CONFIG.strings.rsvp.personSingular : window.BIRTHDAY_CONFIG.strings.rsvp.personPlural}
+           </span>`
+        : '';
+
+      const personalNoteHtml = event.personalNote
+        ? `<p style="margin:14px 0 0;font-family:${SERIF};font-style:italic;
+             font-size:15px;line-height:1.45;color:${accentColor};">
+             “${escapeHtml(event.personalNote)}”
+           </p>`
+        : '';
+
+      const descClamp = isExpanded
+        ? ''
+        : '-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;';
+      const descHtml = `<p style="margin:14px 0 0;font-family:${SERIF};font-size:14.5px;
+        line-height:1.55;color:${bodyColor};${descClamp}">${escapeHtml(event.description)}</p>`;
+
+      const dressChipHtml = (isExpanded && event.dressCode)
+        ? `<div style="margin-top:14px;">${renderDressChip(event.dressCode)}</div>`
+        : '';
+
+      // RSVP error banner (#17) — inline, tonal red
+      const errorBannerHtml = rsvpError ? `
+        <div style="margin-top:16px;padding:10px 12px;background:rgba(186,26,26,0.08);color:#7a1212;
+          display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <span style="font-family:${SERIF};font-size:13px;font-style:italic;">${escapeHtml(rsvpError)}</span>
+          <button data-retry-rsvp="${event.id}" style="font-family:${SANS};font-size:10px;font-weight:500;
+            letter-spacing:0.22em;text-transform:uppercase;color:#7a1212;cursor:pointer;">${window.BIRTHDAY_CONFIG.strings.rsvp.retryButton}</button>
+        </div>` : '';
+
+      const declineOpacity = no ? 0.48 : 1;
+      // Main event: deep forest (the page's anchor). Private: soft sage. Default: parchment.
+      let cardBg, cardExtra = '';
+      if (isMain) {
+        cardBg = C.primary;
+        cardExtra = 'padding:24px 22px 20px;';
+      } else if (isPrivate) {
+        cardBg = 'rgba(224, 229, 204, 0.55)';
+      } else {
+        cardBg = 'rgba(255, 255, 255, 0.80)';
+      }
+
+      const topBadge = isMain
+        ? `<div style="margin-bottom:12px;">${renderCumpleBadge()}</div>`
+        : (isPrivate ? `<div style="margin-bottom:10px;">${renderParaTiBadge()}</div>` : '');
+
+      return `<article data-event-id="${event.id}" style="background:${cardBg};${isMain ? '' : 'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);'}
+        box-shadow:${SHADOW_CARD};padding:20px 20px 18px;${cardExtra}
+        position:relative;opacity:${declineOpacity};transition:opacity .25s, background .25s;">
+        <header style="min-width:0;">
+          ${topBadge}
+          <h3 style="margin:0;font-family:${SERIF};font-size:${isMain ? '26' : '22'}px;font-weight:400;
+            line-height:1.12;color:${titleColor};letter-spacing:-0.005em;cursor:pointer;"
+            data-toggle="${event.id}">${escapeHtml(event.title)}</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:${SANS};font-size:11.5px;color:${softColor};">
+              ${icon('clock', 13, softColor)} ${escapeHtml(timeStr)}
+            </span>
+            ${locationHtml}
+            ${attendeesHtml}
+          </div>
+        </header>
+        ${personalNoteHtml}
+        ${descHtml}
+        ${dressChipHtml}
+        ${errorBannerHtml}
+        ${(yes && event.allowPlusOne) ? renderPlusOneRow(event.id) : ''}
+        <div style="display:flex;gap:8px;margin-top:18px;align-items:center;">
+          ${renderRsvpBtn(yes, 'yes', event.id, yes ? window.BIRTHDAY_CONFIG.strings.rsvp.yesConfirmed : window.BIRTHDAY_CONFIG.strings.rsvp.yes)}
+          ${renderRsvpBtn(no, 'no', event.id, window.BIRTHDAY_CONFIG.strings.rsvp.no)}
+          <button data-toggle="${event.id}" style="margin-left:auto;font-family:${SANS};font-size:10px;
+            letter-spacing:0.22em;text-transform:uppercase;color:${softColor};font-weight:500;
+            display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+            ${isExpanded ? window.BIRTHDAY_CONFIG.strings.rsvp.close : window.BIRTHDAY_CONFIG.strings.rsvp.details}
+            <span style="transform:${isExpanded ? 'rotate(180deg)' : 'none'};transition:transform .2s;font-size:12px;">›</span>
+          </button>
+        </div>
+      </article>`;
+    }
+
+    // ─── Past event card (#19) ───────────────────────────────────
+    function renderPastEventCard(event, day, weekday) {
+      return `<article style="padding:20px 18px 22px;background:rgba(255,255,255,0.50);
+        backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);opacity:0.7;position:relative;">
+        <div style="position:absolute;top:14px;right:14px;padding:3px 8px;
+          background:transparent;color:${C.soft};box-shadow:inset 0 0 0 1px ${C.ghostInk};
+          font-family:${SANS};font-size:9px;font-weight:500;letter-spacing:0.22em;
+          text-transform:uppercase;border-radius:0;">${window.BIRTHDAY_CONFIG.strings.rsvp.pastBadge}</div>
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          ${renderLabel(weekday.toUpperCase(), { size: 10, color: C.soft })}
+          <span style="font-family:${SERIF};font-size:28px;color:${C.soft};
+            font-variant-numeric:tabular-nums;text-decoration:line-through;
+            text-decoration-color:${C.ghostInk};">${String(day).padStart(2,'0')}</span>
+        </div>
+        <h3 style="margin:10px 0 6px;font-family:${SERIF};font-size:22px;font-weight:400;
+          color:${C.onSurfaceVar};">${escapeHtml(event.title)}</h3>
+        <p style="margin:0;font-family:${SERIF};font-size:14px;line-height:1.5;color:${C.soft};">
+          ${escapeHtml(event.description)}</p>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid ${C.ghost};
+          font-family:${SERIF};font-size:13px;font-style:italic;color:${C.primaryC};">
+          ${getEventRsvp(event.id) === 'attending' ? window.BIRTHDAY_CONFIG.strings.rsvp.pastAttended : window.BIRTHDAY_CONFIG.strings.rsvp.pastMissed}
+        </div>
+      </article>`;
+    }
+
+    // ─── Hero ────────────────────────────────────────────────────
+    function renderHero(guest, daysToStart) {
+      return `<section style="padding:28px 24px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px;">
+          ${renderLabel('{{host.name}} · {{host.age}}', { color: C.onSurfaceVar })}
+          ${renderLabel('{{event.dateRange}}', { color: C.soft, size: 9.5 })}
+        </div>
+        <p class="page-enter page-enter-1" style="margin:0;font-family:${SANS};font-weight:500;font-size:11px;
+          letter-spacing:0.32em;text-transform:uppercase;color:${C.primaryC};">{{site.title}}</p>
+        <h1 class="page-enter page-enter-2" style="margin:14px 0 0;font-family:${SERIF};
+          font-size:46px;font-weight:400;line-height:1;letter-spacing:-0.02em;color:${C.primary};">
+          {{site.headline}}<br/>
+          <span style="font-style:italic;color:${C.primaryC};">{{site.tagline}}</span>
+        </h1>
+        <p class="page-enter page-enter-3" style="margin:22px 0 0;font-family:${SERIF};
+          font-size:18px;line-height:1.45;color:${C.onSurfaceVar};">
+          <em style="color:${C.primaryC};font-style:italic;">${escapeHtml(guest.name)}</em>
+          ${window.BIRTHDAY_CONFIG.strings.rsvp.heroBody}
+        </p>
+        <div class="page-enter page-enter-4" style="display:flex;align-items:baseline;gap:12px;
+          margin-top:42px;">
+          <span style="font-family:${SERIF};font-size:38px;font-weight:400;
+            font-variant-numeric:tabular-nums;color:${C.primaryC};letter-spacing:-0.02em;line-height:1;">
+            ${daysToStart >= 0 ? daysToStart : 0}</span>
+          ${renderLabel(daysToStart > 0 ? window.BIRTHDAY_CONFIG.strings.rsvp.daysUntilStart : (daysToStart === 0 ? window.BIRTHDAY_CONFIG.strings.rsvp.startsToday : window.BIRTHDAY_CONFIG.strings.rsvp.thankYou),
+            { size: 10.5, color: C.onSurfaceVar })}
+        </div>
+      </section>`;
+    }
+
+    // ─── WeekStrip ───────────────────────────────────────────────
+    function renderWeekStrip(days, activeDayNum) {
+      const cells = days.map(d => {
+        const active = d.day === activeDayNum;
+        return `<button data-day="${d.day}" style="padding:8px 0 10px;display:flex;flex-direction:column;
+          align-items:center;gap:6px;color:${active ? C.primaryC : C.soft};position:relative;cursor:pointer;
+          outline:none;-webkit-tap-highlight-color:transparent;">
+          ${renderLabel(d.weekday, { size: 9, tracking: '0.20em', color: 'currentColor' })}
+          <span style="font-family:${SERIF};font-size:17px;font-weight:400;
+            font-variant-numeric:tabular-nums;color:${active ? C.primary : C.onSurfaceVar};">
+            ${String(d.dateNum).padStart(2,'0')}</span>
+          ${d.eventCount > 0 ? `<span style="width:${d.hasMain ? 7 : 4}px;height:${d.hasMain ? 7 : 4}px;background:${d.hasMain ? C.primary : (d.hasPrivate ? C.primaryC : C.ghostInk)};${d.hasMain ? 'box-shadow:0 0 0 2px rgba(3,70,56,0.15);' : ''}"></span>` : ''}
+          ${active ? `<span style="position:absolute;bottom:-1px;left:20%;right:20%;height:1.5px;background:${C.primaryC};"></span>` : ''}
+        </button>`;
+      }).join('');
+      return `<div style="position:sticky;top:0;z-index:10;padding:14px 24px 12px;
+        background:rgba(252,249,239,0.80);backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);box-shadow:0 6px 12px -8px rgba(0,46,36,0.10);">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${cells}</div>
+      </div>`;
+    }
+
+    // ─── Sticky CTA ──────────────────────────────────────────────
+    function renderStickyCTA(count, confirmedOnce) {
+      if (count === 0) { appState.stickyHasShown = false; return ''; }
+      const animClass = appState.stickyHasShown ? '' : 'slide-up';
+      appState.stickyHasShown = true;
+      return `<div class="${animClass}" style="position:fixed;bottom:0;left:0;right:0;z-index:30;
+        padding:14px 16px 20px;background:rgba(252,249,239,0.92);backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 -8px 24px rgba(0,46,36,0.10);">
+        <button data-confirm-cta style="width:100%;padding:15px 20px;border-radius:0;
+          background:${C.primaryC};color:${C.surface};display:flex;align-items:center;
+          justify-content:center;gap:10px;font-family:${SANS};font-size:11px;font-weight:500;
+          letter-spacing:0.22em;text-transform:uppercase;
+          box-shadow:0 6px 18px rgba(0,46,36,0.18);cursor:pointer;">
+          <span>${confirmedOnce ? window.BIRTHDAY_CONFIG.strings.rsvp.ctaUpdate : window.BIRTHDAY_CONFIG.strings.rsvp.ctaSend}</span>
+          <span style="min-width:22px;height:20px;padding:0 6px;display:inline-flex;
+            align-items:center;justify-content:center;background:rgba(252,249,239,0.18);
+            color:${C.sage};font-family:${SANS};font-size:11px;font-weight:600;
+            letter-spacing:0.04em;font-variant-numeric:tabular-nums;">${count}</span>
+        </button>
+      </div>`;
+    }
+
+    // ─── Confirm Modal ───────────────────────────────────────────
+    function renderConfirmModal() {
+      const state = appState.modalState;
+      if (state === 'closed') return '';
+
+      const picked = attendingEventIds();
+      const pickedEvents = (appState.data?.events || []).filter(e => picked.includes(e.id));
+      const sending = state === 'sending';
+      const errored = state === 'error';
+      const isEmailOnFile = state === 'emailOnFile';
+
+      // Modal body varies by state
+      let header, body;
+      if (errored) {
+        header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.errorStep, { color: C.error });
+        body = `
+          <h3 style="margin:12px 0 6px;font-family:${SERIF};font-size:26px;font-weight:400;
+            line-height:1.1;color:${C.primary};letter-spacing:-0.01em;">
+            ${window.BIRTHDAY_CONFIG.strings.modal.errorHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.modal.errorSubhead}</em>
+          </h3>
+          <p style="margin:8px 0 18px;font-family:${SERIF};font-size:14px;
+            color:${C.error};font-style:italic;">
+            ${escapeHtml(appState.modalError || window.BIRTHDAY_CONFIG.strings.modal.errorDefault)}
+          </p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
+            ${renderLabel(window.BIRTHDAY_CONFIG.strings.modal.emailLabel, { size: 9.5, color: C.soft })}
+            <input data-confirm-email type="email" value="${escapeHtml(appState.typedEmail)}"
+              autocomplete="email" autofocus placeholder="${window.BIRTHDAY_CONFIG.strings.modal.emailPlaceholder}"
+              style="width:100%;padding:10px 0 12px;background:transparent;border:0;
+              border-bottom:1px solid ${C.error};font-family:${SERIF};font-size:19px;
+              color:${C.primary};outline:none;"/>
+          </div>
+          <button data-confirm-submit style="width:100%;padding:15px 18px;
+            background:${C.primary};color:${C.surface};cursor:pointer;
+            display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:${SERIF};font-size:15px;">${window.BIRTHDAY_CONFIG.strings.modal.retryBtn}</span>
+            ${icon('arrow', 14, C.surface)}
+          </button>`;
+      } else if (sending) {
+        header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.sendingStep, { color: C.onSurfaceVar });
+        const emailLabel = appState.confirmedEmail || appState.typedEmail || window.BIRTHDAY_CONFIG.strings.modal.emailPlaceholder;
+        body = `
+          <h3 style="margin:12px 0 6px;font-family:${SERIF};font-size:26px;font-weight:400;
+            line-height:1.1;color:${C.primary};">
+            ${window.BIRTHDAY_CONFIG.strings.modal.sendingHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.modal.sendingHeadlineItalic}</em>
+          </h3>
+          <p style="margin:4px 0 22px;font-family:${SERIF};font-size:14px;color:${C.onSurfaceVar};">
+            ${escapeHtml(emailLabel)}
+          </p>
+          <button disabled style="width:100%;padding:15px 18px;background:${C.surface3};
+            color:${C.soft};cursor:wait;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:${SERIF};font-size:15px;">${window.BIRTHDAY_CONFIG.strings.modal.sendingBtn}</span>
+            <span style="display:inline-flex;gap:5px;">
+              <span class="pulse-dot" style="width:4px;height:4px;background:${C.primaryC};"></span>
+              <span class="pulse-dot pulse-dot-2" style="width:4px;height:4px;background:${C.primaryC};"></span>
+              <span class="pulse-dot pulse-dot-3" style="width:4px;height:4px;background:${C.primaryC};"></span>
+            </span>
+          </button>`;
+      } else if (isEmailOnFile) {
+        // #18 — email already saved on server. Changing email is admin-only (security: prevent overwrite via guessed code).
+        header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.emailOnFileStep, { color: C.soft, size: 9.5 });
+        body = `
+          <h2 style="margin:14px 0 14px;font-family:${SERIF};font-size:28px;font-weight:400;
+            line-height:1.05;letter-spacing:-0.015em;color:${C.primary};">
+            ${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileHeadlineItalic}</em>
+          </h2>
+          <p style="margin:0 0 8px;font-family:${SERIF};font-size:14px;line-height:1.5;color:${C.onSurfaceVar};">
+            ${window.BIRTHDAY_CONFIG.strings.modal.emailOnFileBody}
+          </p>
+          <p style="margin:0;font-family:${SERIF};font-size:12px;line-height:1.5;color:${C.soft};font-style:italic;">
+            {{messages.emailChangeError}}
+          </p>
+          <div style="display:flex;gap:8px;margin-top:24px;">
+            <button data-modal-close style="flex:1;padding:14px;background:transparent;
+              color:${C.primary};box-shadow:inset 0 0 0 1px ${C.ghostInk};border-radius:0;
+              font-family:${SANS};font-size:11px;font-weight:500;letter-spacing:0.22em;
+              text-transform:uppercase;cursor:pointer;">${window.BIRTHDAY_CONFIG.strings.modal.cancelBtn}</button>
+            <button data-confirm-submit style="flex:2;padding:14px;background:${C.primaryC};
+              color:${C.surface};border-radius:0;font-family:${SANS};font-size:11px;
+              font-weight:500;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;">
+              ${window.BIRTHDAY_CONFIG.strings.modal.sendSameBtn}
+            </button>
+          </div>`;
+      } else {
+        // default — first-time email entry
+        header = renderLabel(window.BIRTHDAY_CONFIG.strings.modal.defaultStep, { color: C.onSurfaceVar });
+        const count = pickedEvents.length;
+        const S = window.BIRTHDAY_CONFIG.strings.modal;
+        const eventCopy = count === 1
+          ? S.confirmationSingular
+          : `${S.confirmationPluralPrefix} ${count} ${S.confirmationPluralSuffix}`;
+        body = `
+          <h3 style="margin:12px 0 6px;font-family:${SERIF};font-size:26px;font-weight:400;
+            line-height:1.1;color:${C.primary};letter-spacing:-0.01em;">
+            ${S.defaultHeadline}<br/><em style="color:${C.primaryC};font-style:italic;">${S.defaultHeadlineItalic}</em>
+          </h3>
+          <p style="margin:4px 0 22px;font-family:${SERIF};font-size:14px;
+            color:${C.onSurfaceVar};line-height:1.5;">
+            ${S.defaultBodyPrefix} ${eventCopy} ${S.defaultBodySuffix}
+          </p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px;">
+            ${renderLabel(S.emailLabel, { size: 9.5, color: C.soft })}
+            <input data-confirm-email type="email" value="${escapeHtml(appState.typedEmail)}"
+              autocomplete="email" autofocus placeholder="${S.emailPlaceholder}"
+              style="width:100%;padding:10px 0 12px;background:transparent;border:0;
+              border-bottom:1px solid rgba(0,46,36,0.20);font-family:${SERIF};
+              font-size:19px;color:${C.primary};outline:none;"/>
+          </div>
+          <button data-confirm-submit style="width:100%;padding:15px 18px;
+            background:${C.primaryC};color:${C.surface};cursor:pointer;
+            display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:${SERIF};font-size:15px;">${S.sendBtn}</span>
+            ${icon('arrow', 14, C.surface)}
+          </button>`;
+      }
+
+      // Desktop: centered popup (520px, generous padding). Mobile: bottom sheet.
+      // Center via flexbox on the backdrop — the modal-in keyframes use
+      // transform:translateY for the entry animation, which would clash with
+      // a transform-based centering trick on the modal itself.
+      const backdropAlign = isDesktop()
+        ? 'align-items:center;justify-content:center;'
+        : 'align-items:flex-end;justify-content:center;';
+      const modalPosition = isDesktop()
+        ? `width:520px;max-width:90vw;background:${C.surface};padding:40px 40px 32px;
+           box-shadow:0 30px 80px rgba(0,46,36,0.22);`
+        : `width:calc(100% - 32px);margin:0 16px 16px;background:${C.surface};
+           padding:28px 24px 24px;box-shadow:0px 30px 80px rgba(0,46,36,0.18);`;
+
+      return `<div data-modal-backdrop class="backdrop-in" style="position:fixed;inset:0;z-index:50;
+        background:rgba(0,46,36,0.35);backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);display:flex;${backdropAlign}">
+        <div class="modal-in" style="${modalPosition}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            ${header}
+            <button data-modal-close style="color:${C.soft};cursor:pointer;">${icon('x', 16)}</button>
+          </div>
+          ${body}
+        </div>
+      </div>`;
+    }
+
+    // ─── Loading screen (#1) ─────────────────────────────────────
+    // ─── Desktop kit (no-card WeekBoard replica) ─────────────────
+    function renderDesktopTopBar(guest, attending, total) {
+      return `<header style="display:grid;grid-template-columns:auto 1fr auto;
+        align-items:center;gap:24px;padding:18px 28px;background:${C.surfaceLow};">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="font-family:${SERIF};font-weight:600;font-size:22px;
+            letter-spacing:-0.02em;color:${C.primary};">{{host.fullName}}</span>
+          <span style="font-family:${SERIF};font-size:14px;color:${C.soft};
+            font-variant-numeric:tabular-nums;">{{host.shortIntro}}</span>
+        </div>
+        <div style="text-align:center;min-width:0;">
+          <span style="font-family:${SERIF};font-style:italic;font-weight:400;
+            font-size:17px;color:${C.primaryC};letter-spacing:-0.005em;">for ${escapeHtml(guest.name)}</span>
+          <span style="display:inline-block;margin:0 12px;width:4px;height:4px;
+            background:rgba(0,46,36,0.25);vertical-align:middle;"></span>
+          <span style="font-family:${SANS};font-size:12px;font-weight:500;color:#55615f;
+            letter-spacing:0.04em;">{{event.dateRangeShort}} · {{site.location}}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;
+          background:${attending > 0 ? C.tertiaryFixed : 'transparent'};">
+          <span style="font-family:${SERIF};font-size:18px;font-weight:600;
+            color:${attending > 0 ? C.primaryC : C.soft};
+            font-variant-numeric:tabular-nums;line-height:1;">${attending}/${total}</span>
+          <span style="font-family:${SANS};font-size:10.5px;font-weight:500;
+            letter-spacing:0.16em;text-transform:uppercase;
+            color:${attending > 0 ? C.primaryC : C.soft};">{{strings.rsvp.chosenLabel}}</span>
+        </div>
+      </header>`;
+    }
+
+    function renderDesktopIntro(guest, totalEvents) {
+      return `<section style="padding:36px 28px 28px;max-width:720px;margin:0 auto;text-align:center;">
+        <span style="display:inline-block;font-family:${SANS};font-size:10.5px;font-weight:600;
+          letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};margin-bottom:18px;">{{site.title}}</span>
+        <h1 style="margin:0;font-family:${SERIF};font-weight:500;font-size:42px;
+          line-height:1.18;letter-spacing:-0.02em;color:${C.primary};">
+          {{site.headline}}
+          <span style="font-style:italic;color:${C.primaryC};">{{site.tagline}}</span>
+        </h1>
+        <p style="margin:18px auto 0;max-width:560px;font-family:${SERIF};
+          font-size:15.5px;line-height:1.55;color:${C.onSurfaceVar};">
+          {{strings.rsvp.desktopIntroBody}}
+        </p>
+      </section>`;
+    }
+
+    function renderKitRsvpBtn(active, variant, eventId, onDark) {
+      const isYes = variant === 'yes';
+      const muted = !isYes;
+      let bg, color, shadow;
+      if (active && !muted)     { bg = C.surface;     color = C.primaryC; shadow = 'none'; }
+      else if (active && muted) { bg = C.onSurfaceVar; color = C.surface; shadow = 'none'; }
+      else if (onDark)          { bg = 'transparent'; color = C.surface; shadow = 'inset 0 0 0 1px rgba(252,249,239,0.30)'; }
+      else if (muted)           { bg = 'transparent'; color = C.soft;    shadow = 'inset 0 0 0 1px rgba(0,46,36,0.18)'; }
+      else                      { bg = C.surface;     color = C.primary; shadow = 'inset 0 0 0 1px rgba(0,46,36,0.25)'; }
+      const label = isYes ? (active ? window.BIRTHDAY_CONFIG.strings.rsvp.kitYesConfirmed : window.BIRTHDAY_CONFIG.strings.rsvp.kitYes) : window.BIRTHDAY_CONFIG.strings.rsvp.kitNo;
+      return `<button data-rsvp="${eventId}" data-action="${variant}" style="
+        flex:1;padding:8px 10px;border:0;border-radius:0;cursor:pointer;
+        background:${bg};color:${color};box-shadow:${shadow};
+        font-family:${SANS};font-size:11px;font-weight:600;
+        letter-spacing:0.12em;text-transform:uppercase;
+        outline:none;-webkit-tap-highlight-color:transparent;
+        transition:background .25s, color .25s, box-shadow .25s;">${escapeHtml(label)}</button>`;
+    }
+
+    function renderKitTile(event) {
+      const expanded = appState.expandedCards.has(event.id);
+      const rsvpStatus = getEventRsvp(event.id);
+      const yes = rsvpStatus === 'attending';
+      const no = rsvpStatus === 'not-attending';
+      const isPrivate = event.visibility === 'private' || event.forYou;
+      const headliner = isMainEvent(event);
+
+      // Background + foreground colors driven by state.
+      // Headliner wins over RSVP-yes so THE birthday tile stays the page's anchor.
+      let bg, fg, subFg;
+      if (headliner)      { bg = C.primary;     fg = C.surface; subFg = 'rgba(252,249,239,0.72)'; }
+      else if (yes)       { bg = C.primaryC;    fg = C.surface; subFg = 'rgba(252,249,239,0.7)';  }
+      else                { bg = 'rgba(255,255,255,0.75)'; fg = C.primary; subFg = '#55615f'; }
+      const onDark = yes || headliner;
+
+      const dotColor = onDark ? C.tertiaryFixed : C.primaryC;
+      const dot = isPrivate
+        ? `<span title="${window.BIRTHDAY_CONFIG.strings.rsvp.paraTiBadge}" style="position:absolute;top:10px;right:10px;width:7px;height:7px;background:${dotColor};"></span>`
+        : '';
+
+      const tileShadow = onDark
+        ? 'none'
+        : 'inset 0 0 0 1px rgba(0,46,36,0.08), 0 1px 2px rgba(0,0,0,0.03)';
+
+      const yesBadge = yes
+        ? `<div style="font-family:${SANS};font-size:10px;font-weight:600;
+            letter-spacing:0.16em;text-transform:uppercase;">${window.BIRTHDAY_CONFIG.strings.rsvp.kitGoingBadge}</div>`
+        : '';
+
+      const mapsLocation = event.mapsUrl
+        ? `<a href="${escapeHtml(event.mapsUrl)}" target="_blank" rel="noreferrer"
+             style="font-family:${SANS};font-size:11.5px;line-height:1.4;color:${subFg};
+             text-decoration:underline;text-decoration-color:${onDark ? 'rgba(252,249,239,0.3)' : 'rgba(0,46,36,0.2)'};
+             text-underline-offset:3px;">${escapeHtml(event.location)}</a>`
+        : `<span style="font-family:${SANS};font-size:11.5px;line-height:1.4;color:${subFg};">${escapeHtml(event.location)}</span>`;
+
+      // Description + dress/attendees — gated behind the expand toggle, since descriptions
+      // can be long and we don't want every tile sprawling on the 7-col grid.
+      const expandedSection = expanded ? `
+        <p style="margin:0;font-family:${SERIF};font-size:13px;line-height:1.45;color:${subFg};">${escapeHtml(event.description)}</p>
+        ${(event.dressCode || typeof event.attendees === 'number') ? `
+          <div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-family:${SANS};font-size:10.5px;color:${subFg};letter-spacing:0.04em;">
+            ${event.dressCode ? `<span>${escapeHtml(event.dressCode)}</span>` : ''}
+            ${typeof event.attendees === 'number' ? `<span>${event.dressCode ? '· ' : ''}${event.attendees} ${event.attendees === 1 ? window.BIRTHDAY_CONFIG.strings.rsvp.personSingular : window.BIRTHDAY_CONFIG.strings.rsvp.personPlural}</span>` : ''}
+          </div>` : ''}
+      ` : '';
+
+      const toggleLink = `<button data-toggle="${event.id}" style="background:transparent;border:0;
+        color:${subFg};cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;
+        align-self:flex-start;padding:0;display:inline-flex;align-items:center;gap:4px;
+        font-family:${SANS};font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;">
+        ${expanded ? window.BIRTHDAY_CONFIG.strings.rsvp.seeLess : window.BIRTHDAY_CONFIG.strings.rsvp.seeMore}
+        <span style="font-size:11px;transform:${expanded ? 'rotate(180deg)' : 'none'};transition:transform .2s;">›</span>
+      </button>`;
+
+      return `<div data-event-id="${event.id}" style="background:${bg};color:${fg};
+        border-radius:0;box-shadow:${tileShadow};opacity:${no ? 0.45 : 1};
+        overflow:hidden;transition:background .25s, opacity .25s;
+        padding:12px;display:flex;flex-direction:column;gap:8px;position:relative;">
+        ${dot}
+        <span style="font-family:${SANS};font-size:10px;font-weight:600;
+          letter-spacing:0.14em;text-transform:uppercase;color:${subFg};
+          font-variant-numeric:tabular-nums;">${formatKitTime(event.time)}${headliner ? ' ' + window.BIRTHDAY_CONFIG.strings.rsvp.kitHeadlinerSuffix : ''}</span>
+        <span style="font-family:${SERIF};font-size:17px;font-weight:500;
+          line-height:1.15;letter-spacing:-0.015em;padding-right:${isPrivate ? '12px' : '0'};">${escapeHtml(event.title)}</span>
+        ${mapsLocation}
+        ${expandedSection}
+        ${toggleLink}
+        ${yesBadge}
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          ${renderKitRsvpBtn(yes, 'yes', event.id, onDark)}
+          ${renderKitRsvpBtn(no, 'no', event.id, onDark)}
+        </div>
+        ${(yes && event.allowPlusOne) ? renderKitPlusOneRow(event.id, onDark, subFg) : ''}
+      </div>`;
+    }
+
+    function renderKitPlusOneRow(eventId, onDark, subFg) {
+      const state = getEventPlusOne(eventId);
+      const enabled = !!state?.enabled;
+      const name = state?.name || '';
+      const fieldColor = onDark ? C.surface : C.primary;
+      const lineColor = onDark ? 'rgba(252,249,239,0.30)' : 'rgba(0,46,36,0.20)';
+      return `<div style="margin-top:6px;display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:${SANS};font-size:11px;letter-spacing:0.04em;color:${subFg};">
+          <input type="checkbox" data-plus-one-toggle="${eventId}" ${enabled ? 'checked' : ''} style="width:13px;height:13px;cursor:pointer;accent-color:${onDark ? C.surface : C.primaryC};"/>
+          <span>{{strings.rsvp.plusOneLabel}}</span>
+        </label>
+        ${enabled ? `<div class="details-expand"><input type="text" data-plus-one-name="${eventId}" placeholder="{{strings.rsvp.plusOneNameShort}}" value="${escapeHtml(name)}" style="font-family:${SERIF};font-style:italic;font-size:12px;color:${fieldColor};background:transparent;border:0;border-bottom:1px solid ${lineColor};padding:3px 0;outline:none;width:100%;"/></div>` : ''}
+      </div>`;
+    }
+
+    function renderWeekBoard(events, startDateStr) {
+      const startObj = new Date(startDateStr + 'T12:00:00');
+      // Mon..Sun order (birthday week day 1..7). weekdaysShort is Sun-indexed so reorder: [Mon,Tue,Wed,Thu,Fri,Sat,Sun]
+      const _WD_ALL = (window.BIRTHDAY_CONFIG.strings.calendar.weekdaysShort || 'Sun,Mon,Tue,Wed,Thu,Fri,Sat').split(',');
+      const WD = [..._WD_ALL.slice(1), _WD_ALL[0]].map(s => s.toLowerCase());
+      const todayDayPos = (() => {
+        const t = new Date(); t.setHours(0,0,0,0);
+        const diff = Math.round((t - new Date(startObj.getFullYear(), startObj.getMonth(), startObj.getDate())) / (1000*60*60*24));
+        return diff + 1;
+      })();
+
+      const cols = Array.from({ length: 7 }, (_, i) => {
+        const day = i + 1;
+        const date = new Date(startObj.getTime() + i * 24 * 60 * 60 * 1000);
+        const todays = events
+          .filter(e => dayOfWeek(e.date, startDateStr) === day)
+          .sort((a, b) => a.time.localeCompare(b.time));
+        const isToday = day === todayDayPos;
+        return `<div style="display:flex;flex-direction:column;gap:8px;min-height:300px;">
+          <div style="display:flex;align-items:baseline;padding-bottom:8px;">
+            <span style="font-family:${SANS};font-size:10px;font-weight:600;
+              letter-spacing:0.18em;text-transform:uppercase;
+              color:${isToday ? C.primaryC : C.soft};">${WD[i].toLowerCase()}</span>
+            <span style="font-family:${SERIF};font-size:22px;line-height:1;font-weight:500;
+              color:${isToday ? C.primaryC : C.primary};font-variant-numeric:tabular-nums;
+              letter-spacing:-0.02em;margin-left:auto;">${String(date.getDate()).padStart(2,'0')}</span>
+          </div>
+          ${todays.map(renderKitTile).join('')}
+        </div>`;
+      }).join('');
+
+      return `<main style="padding:20px 28px 32px;max-width:1280px;margin:0 auto;">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:start;">
+          ${cols}
+        </div>
+      </main>`;
+    }
+
+    function renderDesktopConfirmStrip(count) {
+      if (count === 0) { appState.stickyHasShown = false; return ''; }
+      const animClass = appState.stickyHasShown ? '' : 'slide-up';
+      appState.stickyHasShown = true;
+      return `<div class="${animClass}" style="position:fixed;bottom:0;left:0;right:0;z-index:30;
+        padding:16px 28px;background:${C.primary};color:${C.surface};
+        display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="font-family:${SERIF};font-size:32px;font-weight:600;
+            color:${C.sage};line-height:1;font-variant-numeric:tabular-nums;">${count}</span>
+          <span style="font-family:${SERIF};font-size:17px;color:${C.surface};">
+            ${count === 1 ? window.BIRTHDAY_CONFIG.strings.rsvp.eventSingular : window.BIRTHDAY_CONFIG.strings.rsvp.eventPlural} —
+            <em style="font-style:italic;color:rgba(252,249,239,0.7);">${appState.hasConfirmedOnce ? window.BIRTHDAY_CONFIG.strings.rsvp.stripUpdate : window.BIRTHDAY_CONFIG.strings.rsvp.stripSend}</em>
+          </span>
+        </div>
+        <button data-confirm-cta style="padding:12px 22px;border:0;cursor:pointer;
+          background:${C.surface};color:${C.primary};border-radius:0;
+          font-family:${SANS};font-size:11px;font-weight:600;
+          letter-spacing:0.22em;text-transform:uppercase;">
+          ${appState.hasConfirmedOnce ? window.BIRTHDAY_CONFIG.strings.rsvp.stripUpdateBtn : window.BIRTHDAY_CONFIG.strings.rsvp.stripConfirmBtn} →
+        </button>
+      </div>`;
+    }
+
+    function renderDesktopTimeline(data) {
+      const { guest, events, birthdayWeek } = data;
+      const startDate = birthdayWeek.startDate;
+      const attendingCount = attendingEventIds().length;
+      return `<div style="min-height:100vh;padding-bottom:120px;font-family:${SERIF};">
+        ${renderDesktopTopBar(guest, attendingCount, events.length)}
+        ${renderDesktopIntro(guest, events.length)}
+        ${renderWeekBoard(events, startDate)}
+        ${renderDesktopConfirmStrip(attendingCount)}
+        ${renderConfirmModal()}
+      </div>`;
+    }
+
+    function renderLoadingScreen() {
+      return `<div style="min-height:100vh;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;padding:0 32px;gap:32px;position:relative;">
+        <div style="font-family:${SANS};font-size:10px;font-weight:500;
+          letter-spacing:0.32em;text-transform:uppercase;color:${C.soft};">
+          {{host.name}} · {{host.age}} · {{event.monthYear}}
+        </div>
+        <h2 class="shimmer-text" style="margin:0;font-family:${SERIF};font-size:36px;
+          font-weight:400;line-height:1.1;text-align:center;letter-spacing:-0.015em;">
+          {{site.loadingHeadline}}
+        </h2>
+        <div style="display:inline-flex;gap:8px;margin-top:8px;">
+          <span class="pulse-dot" style="width:6px;height:6px;background:${C.primaryC};"></span>
+          <span class="pulse-dot pulse-dot-2" style="width:6px;height:6px;background:${C.primaryC};"></span>
+          <span class="pulse-dot pulse-dot-3" style="width:6px;height:6px;background:${C.primaryC};"></span>
+        </div>
+        <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;">
+          ${renderLabel('{{event.dateRangeFull}}', { size: 9, color: C.soft })}
+        </div>
+      </div>`;
+    }
+
+    // ─── Invalid code screen (#9) ────────────────────────────────
+    function renderInvalidCode(message) {
+      return `<div style="min-height:100vh;position:relative;">
+        <div style="padding:24px 24px 0;display:flex;justify-content:space-between;">
+          ${renderLabel('{{host.name}} · {{host.age}} · {{event.monthYear}}', { color: C.onSurfaceVar })}
+        </div>
+        <div style="padding:120px 28px 0;">
+          ${renderLabel(window.BIRTHDAY_CONFIG?.strings?.states?.invalidCodeLabel || '404 · Invitation not found', { size: 10.5, color: C.error })}
+          <h2 style="margin:20px 0 0;font-family:${SERIF};font-size:44px;font-weight:400;
+            line-height:1.02;letter-spacing:-0.02em;color:${C.primary};">
+            ${message ? escapeHtml(message) : `This link<br/><em style="font-style:italic;color:${C.primaryC};">doesn't know you.</em>`}
+          </h2>
+          <p style="margin:28px 0 0;font-family:${SERIF};font-size:17px;line-height:1.55;color:${C.onSurfaceVar};">
+            ${window.BIRTHDAY_CONFIG?.strings?.states?.invalidCodeBody || 'Each guest has their own link. Check the message'} ${escapeHtml(window.BIRTHDAY_CONFIG?.host?.name || 'the host')},
+            ${window.BIRTHDAY_CONFIG?.strings?.states?.invalidCodeBodySuffix || 'sent you, or reach out directly.'}
+          </p>
+        </div>
+        <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;">
+          ${renderLabel(`${window.BIRTHDAY_CONFIG?.site?.title || ''} · {{event.dateRangeFull}}`, { size: 9, color: C.soft })}
+        </div>
+      </div>`;
+    }
+
+    // ─── Success screen (#8) ─────────────────────────────────────
+    function renderSuccessScreen() {
+      const picked = appState.confirmedEvents || [];
+      const email = appState.confirmedEmail || '';
+      const startDate = appState.data?.birthdayWeek?.startDate || '2026-06-01';
+      return `<div style="min-height:100vh;position:relative;">
+        <div style="padding:28px 24px 22px;display:flex;justify-content:space-between;">
+          ${renderLabel('{{host.name}} · {{host.age}}', { color: C.onSurfaceVar })}
+          <button data-back-to-timeline style="color:${C.soft};cursor:pointer;">${icon('x', 16)}</button>
+        </div>
+        <div style="padding:60px 28px 40px;">
+          ${(() => {
+            const SS = window.BIRTHDAY_CONFIG.strings.states;
+            const n = picked.length;
+            const evLabel = n === 1 ? SS.common_eventSingular || window.BIRTHDAY_CONFIG.strings.common.event : SS.common_eventPlural || window.BIRTHDAY_CONFIG.strings.common.events;
+            return renderLabel(`${SS.confirmedLabel} · ${n} ${evLabel}`, { size: 10.5, color: C.primaryC });
+          })()}
+          <h2 style="margin:20px 0 0;font-family:${SERIF};font-size:46px;font-weight:400;
+            line-height:1.0;letter-spacing:-0.02em;color:${C.primary};">
+            ${window.BIRTHDAY_CONFIG.strings.states.successHeadline}<br/><em style="font-style:italic;color:${C.primaryC};">${window.BIRTHDAY_CONFIG.strings.states.successSubhead}</em>
+          </h2>
+          <p style="margin:28px 0 0;font-family:${SERIF};font-size:17px;line-height:1.55;color:${C.onSurfaceVar};">
+            ${window.BIRTHDAY_CONFIG.strings.states.successBodyPrefix} <span style="color:${C.primary};">${escapeHtml(email || window.BIRTHDAY_CONFIG.strings.modal.emailPlaceholder)}</span> ${window.BIRTHDAY_CONFIG.strings.states.successBodyMiddle}
+            ${picked.length === 1 ? window.BIRTHDAY_CONFIG.strings.states.successEventSingular : `${window.BIRTHDAY_CONFIG.strings.states.successEventPluralPrefix} ${picked.length} ${window.BIRTHDAY_CONFIG.strings.states.successEventPluralSuffix}`} ${window.BIRTHDAY_CONFIG.strings.states.successBodySuffix}
+          </p>
+          <div style="margin-top:36px;padding-top:22px;padding-bottom:22px;
+            border-top:1px solid ${C.ghost};border-bottom:1px solid ${C.ghost};
+            display:flex;flex-direction:column;gap:14px;">
+            ${picked.map(e => {
+              const day = dayOfWeek(e.date, startDate);
+              const wd = weekdayShort(e.date);
+              return `<div style="display:flex;align-items:baseline;gap:16px;">
+                ${renderLabel(`${wd.toUpperCase()} ${String(day).padStart(2,'0')}`, { size: 10, color: C.soft })}
+                <span style="font-family:${SERIF};font-size:19px;color:${C.primary};">${escapeHtml(e.title)}</span>
+              </div>`;
+            }).join('')}
+          </div>
+          <button data-back-to-timeline style="margin-top:24px;font-family:${SANS};font-size:11px;
+            font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:${C.onSurfaceVar};
+            display:inline-flex;align-items:center;gap:8px;padding-bottom:2px;
+            border-bottom:1px solid ${C.ghostInk};cursor:pointer;">
+            ${window.BIRTHDAY_CONFIG.strings.states.successEditBtn} <span style="font-size:13px;">›</span>
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // ─── Admin shell (C.1 — tabs scaffold; C.2/C.3 fill content) ─
+    function renderAdminShell() {
+      const tabs = [
+        { id: 'eventos',        label: window.BIRTHDAY_CONFIG.strings.admin.tabEvents },
+        { id: 'invitados',      label: window.BIRTHDAY_CONFIG.strings.admin.tabGuests },
+        { id: 'confirmaciones', label: window.BIRTHDAY_CONFIG.strings.admin.tabRsvps },
+        { id: 'mensaje',        label: window.BIRTHDAY_CONFIG.strings.admin.tabBroadcast },
+      ];
+      const active = appState.adminTab || 'eventos';
+      const tabBtn = (t) => {
+        const on = t.id === active;
+        return `<button data-admin-tab="${t.id}" style="
+          padding:14px 4px;margin-right:28px;font-family:${SANS};font-weight:600;font-size:11.5px;
+          letter-spacing:0.18em;text-transform:uppercase;color:${on ? C.primaryC : C.soft};
+          border-bottom:2px solid ${on ? C.primaryC : 'transparent'};
+          background:transparent;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;
+        ">${t.label}</button>`;
+      };
+      return `<div style="min-height:100vh;background:${C.surface};">
+        <header style="position:sticky;top:0;z-index:20;padding:20px 28px 0;background:rgba(252,249,239,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 6px 12px -8px rgba(0,46,36,0.10);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:14px;">
+            <div>
+              <p style="margin:0 0 4px;font-family:${SANS};font-weight:500;font-size:10.5px;
+                letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">{{strings.admin.eyebrow}} {{site.title}}</p>
+              <h1 style="margin:0;font-family:${SERIF};font-weight:400;font-size:26px;
+                letter-spacing:-0.02em;color:${C.primary};line-height:1.05;">{{strings.admin.panelTitle}}</h1>
+            </div>
+          </div>
+          <nav style="display:flex;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+            ${tabs.map(tabBtn).join('')}
+          </nav>
+        </header>
+        <main style="padding:40px 28px 80px;max-width:1200px;margin:0 auto;">
+          ${renderAdminTabContent(active)}
+        </main>
+      </div>`;
+    }
+
+    function renderAdminTabContent(tab) {
+      if (tab === 'eventos')        return renderAdminEventos();
+      if (tab === 'invitados')      return renderAdminInvitados();
+      if (tab === 'confirmaciones') return renderAdminConfirmaciones();
+      if (tab === 'mensaje')        return renderAdminMensajeStub();
+      return '';
+    }
+
+    function adminLoadingStub() {
+      return `<div style="padding:48px 24px;text-align:center;">
+        <p style="margin:0;font-family:${SERIF};font-style:italic;font-size:15px;color:${C.soft};">${window.BIRTHDAY_CONFIG.strings.states.loadingDots}</p>
+      </div>`;
+    }
+
+    // ─── Form helpers (admin edit + broadcast) ──────────────────
+    function adminLabelStyle() {
+      return `font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};margin-bottom:6px;display:block;`;
+    }
+    function adminInputStyle() {
+      return `font-family:${SERIF};font-size:17px;color:${C.primary};background:transparent;border:0;border-bottom:1px solid ${C.ghostInk};padding:8px 0;width:100%;outline:none;`;
+    }
+    function adminTextareaStyle() {
+      return `font-family:${SERIF};font-size:16px;line-height:1.5;color:${C.primary};background:${C.surface2};border:0;padding:14px 16px;width:100%;outline:none;resize:vertical;min-height:96px;`;
+    }
+    // ─── Admin button system (per DESIGN_SPEC) ──────────────────
+    // Primary: 45° gradient primary→primary-container, white text, 0 radius.
+    // Ghost: text-only in primary, no background, no border.
+    // Danger: text-only in error, no background, no border.
+    function adminBtnBase() {
+      return `font-family:${SANS};font-weight:600;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;border:0;border-radius:0;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;display:inline-flex;align-items:center;gap:8px;line-height:1;`;
+    }
+    function adminBtnPrimary(opts = {}) {
+      const dim = opts.disabled ? 'opacity:0.5;pointer-events:none;' : '';
+      return `${adminBtnBase()}color:#ffffff;padding:14px 24px;background:linear-gradient(135deg, ${C.primary} 0%, ${C.primaryC} 100%);${dim}`;
+    }
+    function adminBtnGhost(opts = {}) {
+      const dim = opts.disabled ? 'opacity:0.5;pointer-events:none;' : '';
+      const color = opts.color || C.primaryC;
+      return `${adminBtnBase()}color:${color};padding:12px 0;background:transparent;${dim}`;
+    }
+    function adminBtnDanger(opts = {}) {
+      const dim = opts.disabled ? 'opacity:0.5;pointer-events:none;' : '';
+      return `${adminBtnBase()}color:${C.error};padding:14px 0;background:transparent;${dim}`;
+    }
+    function adminField(type, name, label, value, opts = {}) {
+      const v = value === undefined || value === null ? '' : value;
+      const flexStyle = opts.flex ? 'flex:1;' : '';
+      return `<div style="${flexStyle}"><label style="${adminLabelStyle()}">${label}</label>
+        <input type="${type}" data-edit-field="${name}" value="${escapeHtml(String(v))}" style="${adminInputStyle()}"/>
+      </div>`;
+    }
+    function adminTextarea(name, label, value, rows = 3) {
+      return `<div><label style="${adminLabelStyle()}">${label}</label>
+        <textarea data-edit-field="${name}" rows="${rows}" style="${adminTextareaStyle()}">${escapeHtml(value || '')}</textarea>
+      </div>`;
+    }
+
+    function renderAdminEditView() {
+      const { mode, draft, saving, deleting, error } = appState.adminEdit;
+      const isEdit = mode === 'edit';
+      const guests = appState.adminData?.guests || [];
+      const isPrivate = draft.visibility === 'private';
+      const allowed = new Set(draft.allowedCodes || []);
+      const notes = draft.personalNotes || {};
+
+      const guestRow = (g) => {
+        const checked = allowed.has(g.code);
+        return `<div style="display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px solid ${C.ghostSoft};">
+          <label style="font:400 15px/1.2 ${SERIF};color:${C.primary};display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" data-edit-allowed="${escapeHtml(g.code)}" ${checked ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;"/>
+            ${escapeHtml(g.name)} <span style="color:${C.soft};font-size:12px;font-family:${SANS};">· ${escapeHtml(g.code)}</span>
+          </label>
+          ${checked ? `<input type="text" data-edit-note="${escapeHtml(g.code)}" placeholder="${window.BIRTHDAY_CONFIG.strings.admin.personalNotePlaceholder} ${escapeHtml(g.name)} ${window.BIRTHDAY_CONFIG.strings.admin.personalNotePlaceholderSuffix}" value="${escapeHtml(notes[g.code] || '')}" style="${adminInputStyle()};font-style:italic;margin-left:26px;width:calc(100% - 26px);"/>` : ''}
+        </div>`;
+      };
+
+      return `<div style="min-height:100vh;background:${C.surface};padding-bottom:96px;">
+        <header style="position:sticky;top:0;background:${C.surface};border-bottom:1px solid ${C.ghostSoft};padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;z-index:10;">
+          <div style="min-width:0;flex:1;">
+            <p style="margin:0 0 2px;font-family:${SANS};font-weight:500;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">${isEdit ? window.BIRTHDAY_CONFIG.strings.admin.editEventTitle : window.BIRTHDAY_CONFIG.strings.admin.newEventTitle}</p>
+            <h1 style="margin:0;font:400 22px/1.2 ${SERIF};color:${C.primary};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(draft.title || (isEdit ? '…' : window.BIRTHDAY_CONFIG.strings.admin.untitledEvent))}</h1>
+          </div>
+          <button data-admin-edit-close style="font-family:${SANS};font-size:12px;letter-spacing:0.04em;color:${C.soft};cursor:pointer;background:transparent;border:0;">${window.BIRTHDAY_CONFIG.strings.admin.cancelBtn}</button>
+        </header>
+        <main style="max-width:680px;margin:0 auto;padding:32px 24px;">
+          ${error ? `<div style="margin-bottom:18px;padding:14px 18px;background:rgba(186,26,26,0.08);color:${C.error};font:400 14px/1.5 ${SERIF};font-style:italic;">${escapeHtml(error)}</div>` : ''}
+          <div style="display:flex;flex-direction:column;gap:22px;">
+            ${adminField('text', 'title', window.BIRTHDAY_CONFIG.strings.admin.fieldTitle, draft.title)}
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              ${adminField('date', 'date', window.BIRTHDAY_CONFIG.strings.admin.fieldDate, draft.date, { flex: true })}
+              ${adminField('time', 'time', window.BIRTHDAY_CONFIG.strings.admin.fieldTimeStart, draft.time, { flex: true })}
+              ${adminField('time', 'endTime', window.BIRTHDAY_CONFIG.strings.admin.fieldTimeEnd, draft.endTime, { flex: true })}
+            </div>
+            ${adminField('text', 'location', window.BIRTHDAY_CONFIG.strings.admin.fieldLocation, draft.location)}
+            ${adminField('url', 'mapsUrl', window.BIRTHDAY_CONFIG.strings.admin.fieldMapsUrl, draft.mapsUrl)}
+            ${adminTextarea('description', window.BIRTHDAY_CONFIG.strings.admin.fieldDescription, draft.description, 3)}
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              ${adminField('text', 'dressCode', window.BIRTHDAY_CONFIG.strings.admin.fieldDressCode, draft.dressCode, { flex: true })}
+              ${adminField('number', 'attendees', window.BIRTHDAY_CONFIG.strings.admin.fieldAttendees, draft.attendees, { flex: true })}
+            </div>
+            <fieldset style="border:0;padding:0;margin:0;">
+              <legend style="${adminLabelStyle()};padding:0;">${window.BIRTHDAY_CONFIG.strings.admin.visibilityLegend}</legend>
+              <div style="display:flex;gap:22px;margin-top:6px;">
+                <label style="font:400 15px ${SERIF};color:${C.primary};display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="radio" name="visibility" value="public" data-edit-field="visibility" ${!isPrivate ? 'checked' : ''}/> ${window.BIRTHDAY_CONFIG.strings.admin.visibilityPublic}
+                </label>
+                <label style="font:400 15px ${SERIF};color:${C.primary};display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="radio" name="visibility" value="private" data-edit-field="visibility" ${isPrivate ? 'checked' : ''}/> ${window.BIRTHDAY_CONFIG.strings.admin.visibilityPrivate}
+                </label>
+              </div>
+            </fieldset>
+            <fieldset style="border:0;padding:0;margin:0;">
+              <legend style="${adminLabelStyle()};padding:0;">${window.BIRTHDAY_CONFIG.strings.admin.plusOneLegend}</legend>
+              <label style="margin-top:6px;font:400 15px ${SERIF};color:${C.primary};display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" data-edit-field="allowPlusOne" ${(isPrivate ? draft.allowPlusOne === true : draft.allowPlusOne !== false) ? 'checked' : ''} style="width:16px;height:16px;cursor:inherit;accent-color:${C.primaryC};"/>
+                ${window.BIRTHDAY_CONFIG.strings.admin.allowPlusOneLabel}
+              </label>
+              <p style="margin:6px 0 0 26px;font:400 11.5px/1.4 ${SANS};color:${C.soft};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.admin.allowPlusOneHint}</p>
+            </fieldset>
+            ${isPrivate ? `
+              <fieldset style="border:1px solid ${C.ghostSoft};padding:16px;margin:0;">
+                <legend style="${adminLabelStyle()};padding:0 6px;">${window.BIRTHDAY_CONFIG.strings.admin.guestsLegend}</legend>
+                <div style="display:flex;flex-direction:column;">
+                  ${guests.length ? guests.map(guestRow).join('') : `<p style="margin:8px 0;font-family:${SERIF};font-style:italic;color:${C.soft};">${window.BIRTHDAY_CONFIG.strings.admin.noGuestsYet}</p>`}
+                </div>
+              </fieldset>
+            ` : ''}
+          </div>
+        </main>
+        <footer style="position:fixed;bottom:0;left:0;right:0;background:${C.surface};border-top:1px solid ${C.ghostSoft};padding:14px 24px;display:flex;gap:12px;justify-content:flex-end;align-items:center;">
+          ${isEdit ? `<button data-admin-edit-delete style="${adminBtnDanger({ disabled: deleting })}">${deleting ? window.BIRTHDAY_CONFIG.strings.admin.deletingEventBtn : window.BIRTHDAY_CONFIG.strings.admin.deleteEventBtn}</button>` : ''}
+          <button data-admin-edit-save style="${adminBtnPrimary({ disabled: saving })}">${saving ? window.BIRTHDAY_CONFIG.strings.admin.savingBtn : window.BIRTHDAY_CONFIG.strings.admin.saveBtn}</button>
+        </footer>
+      </div>`;
+    }
+
+    // ─── Guest edit (new guest / edit) ──────────────────────────
+    function renderGuestEditView() {
+      const { mode, draft, saving, deleting, error, originalCode } = appState.guestEdit;
+      const isEdit = mode === 'edit';
+      const isHost = !!draft.isHost;
+
+      return `<div style="min-height:100vh;background:${C.surface};padding-bottom:120px;">
+        <header style="position:sticky;top:0;background:${C.surface};padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;z-index:10;">
+          <div style="min-width:0;flex:1;">
+            <p style="margin:0 0 4px;font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">${isEdit ? window.BIRTHDAY_CONFIG.strings.admin.editGuestTitle : window.BIRTHDAY_CONFIG.strings.admin.newGuestTitle}</p>
+            <h1 style="margin:0;font:400 26px/1.15 ${SERIF};color:${C.primary};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(draft.name || (isEdit ? '…' : window.BIRTHDAY_CONFIG.strings.admin.untitledGuest))}</h1>
+          </div>
+          <button data-guest-edit-close style="${adminBtnGhost({ color: C.soft })}">${window.BIRTHDAY_CONFIG.strings.admin.cancelBtn}</button>
+        </header>
+        <main style="max-width:560px;margin:0 auto;padding:32px 24px;">
+          ${error ? `<div style="margin-bottom:22px;padding:14px 18px;background:rgba(186,26,26,0.08);color:${C.error};font:400 14px/1.5 ${SERIF};font-style:italic;">${escapeHtml(error)}</div>` : ''}
+          <div style="display:flex;flex-direction:column;gap:24px;">
+            ${adminField('text', 'name', window.BIRTHDAY_CONFIG.strings.admin.fieldName, draft.name)}
+            ${isEdit ? `<div><label style="${adminLabelStyle()}">${window.BIRTHDAY_CONFIG.strings.admin.codeLabel}</label>
+              <div style="font:400 17px/1.2 ${SERIF};color:${C.onSurfaceVar};padding:8px 0;">${escapeHtml(originalCode)}</div>
+              <p style="margin:6px 0 0;font:400 11.5px/1.4 ${SANS};color:${C.soft};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.admin.codeHint}</p>
+            </div>` : `<p style="margin:-6px 0 0;font:400 11.5px/1.4 ${SANS};color:${C.soft};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.admin.autoCodeHint}</p>`}
+            <fieldset style="border:0;padding:0;margin:0;">
+              <legend style="${adminLabelStyle()};padding:0;">${window.BIRTHDAY_CONFIG.strings.admin.genderLegend}</legend>
+              <div style="display:flex;gap:22px;margin-top:6px;">
+                <label style="font:400 15px ${SERIF};color:${C.primary};display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="radio" name="gender" value="f" data-edit-field="gender" ${draft.gender === 'f' ? 'checked' : ''}/> ${window.BIRTHDAY_CONFIG.strings.admin.genderFeminine}
+                </label>
+                <label style="font:400 15px ${SERIF};color:${C.primary};display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="radio" name="gender" value="m" data-edit-field="gender" ${draft.gender === 'm' ? 'checked' : ''}/> ${window.BIRTHDAY_CONFIG.strings.admin.genderMasculine}
+                </label>
+              </div>
+            </fieldset>
+            ${adminField('email', 'email', window.BIRTHDAY_CONFIG.strings.admin.fieldEmail, draft.email)}
+          </div>
+        </main>
+        <footer style="position:fixed;bottom:0;left:0;right:0;background:${C.surface};padding:18px 28px;display:flex;gap:20px;justify-content:flex-end;align-items:center;box-shadow:0 -8px 24px rgba(0, 46, 36, 0.04);">
+          ${isEdit && !isHost ? `<button data-guest-edit-delete style="${adminBtnDanger({ disabled: deleting })}">${deleting ? window.BIRTHDAY_CONFIG.strings.admin.deletingGuestBtn : window.BIRTHDAY_CONFIG.strings.admin.deleteGuestBtn}</button>` : ''}
+          <button data-guest-edit-save style="${adminBtnPrimary({ disabled: saving })}">${saving ? window.BIRTHDAY_CONFIG.strings.admin.savingBtn : window.BIRTHDAY_CONFIG.strings.admin.saveBtn}</button>
+        </footer>
+      </div>`;
+    }
+
+    // ─── Broadcast (Mensaje masivo) ─────────────────────────────
+    function renderAdminMensajeStub() {
+      const b = appState.broadcast;
+      const events = appState.adminData?.events || [];
+      const sortedEvents = [...events].sort((a,b) => a.date.localeCompare(b.date));
+      const sentResult = b.sentResult;
+
+      const segmentRow = (val, label, desc) => {
+        const on = b.segment === val || (val.startsWith('confirmed-event:') && b.segment === val);
+        return `<label data-broadcast-segment="${val}" style="
+          display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer;
+          background:${on ? C.surface3 : C.surface2};transition:background .2s;
+        ">
+          <input type="radio" name="bseg" ${on ? 'checked' : ''} style="margin-top:4px;cursor:pointer;accent-color:${C.primaryC};"/>
+          <span style="flex:1;">
+            <span style="display:block;font:500 14px/1.3 ${SERIF};color:${C.primary};">${escapeHtml(label)}</span>
+            <span style="display:block;margin-top:2px;font:400 12px/1.4 ${SANS};color:${C.soft};">${escapeHtml(desc)}</span>
+          </span>
+        </label>`;
+      };
+
+      const BS = window.BIRTHDAY_CONFIG.strings.admin;
+      const eventSegmentBlock = sortedEvents.length > 0 ? `
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+          ${sortedEvents.map(e => segmentRow(`confirmed-event:${e.id}`, `${BS.segmentEventPrefix} ${e.title}`, BS.segmentEventDesc)).join('')}
+        </div>` : '';
+
+      return `<div style="display:flex;flex-direction:column;gap:24px;max-width:680px;">
+        ${sentResult ? `<div style="padding:16px 18px;background:rgba(122,179,161,0.18);color:${C.primary};font:400 14px/1.5 ${SERIF};">
+          ${BS.sentResult} ${sentResult.sent} ${BS.sentOf} ${sentResult.total}${sentResult.failed > 0 ? ` · ${sentResult.failed} ${BS.sentFailed}` : ''}.
+        </div>` : ''}
+        ${b.error ? `<div style="padding:14px 18px;background:rgba(186,26,26,0.08);color:${C.error};font:400 14px/1.5 ${SERIF};font-style:italic;">${escapeHtml(b.error)}</div>` : ''}
+
+        <section>
+          <h3 style="margin:0 0 12px;${adminLabelStyle()};color:${C.onSurfaceVar};">${BS.recipientsHeading}</h3>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${segmentRow('all', BS.segmentAll, BS.segmentAllDesc)}
+            ${segmentRow('confirmed-any', BS.segmentConfirmedAny, BS.segmentConfirmedAnyDesc)}
+          </div>
+          ${eventSegmentBlock}
+        </section>
+
+        <section>
+          <h3 style="margin:0 0 12px;${adminLabelStyle()};color:${C.onSurfaceVar};">${BS.messageHeading}</h3>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+              <label style="${adminLabelStyle()}">${BS.subjectLabel}</label>
+              <input type="text" data-broadcast="subject" value="${escapeHtml(b.subject)}" placeholder="${BS.subjectPlaceholder}" style="${adminInputStyle()}"/>
+            </div>
+            <div>
+              <label style="${adminLabelStyle()}">${BS.bodyLabel}</label>
+              <textarea data-broadcast="body" rows="8" placeholder="${BS.bodyPlaceholder}" style="${adminTextareaStyle()};min-height:180px;">${escapeHtml(b.body)}</textarea>
+              <p style="margin:6px 0 0;font:400 11.5px/1.4 ${SANS};color:${C.soft};">${BS.bodyHint}</p>
+            </div>
+          </div>
+        </section>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:24px;">
+          <span style="font:400 13px/1.4 ${SANS};color:${C.soft};">
+            ${b.recipientCount === null ? BS.recipientCounting :
+              b.recipientCount === 0 ? BS.recipientNone :
+              `${b.recipientCount} ${b.recipientCount === 1 ? BS.recipientSingular : BS.recipientPlural}`}
+          </span>
+          <button data-broadcast-send style="${adminBtnPrimary({ disabled: b.sending || !b.recipientCount })}">${b.sending ? BS.sendingBtn : BS.sendBtn}</button>
+        </div>
+      </div>`;
+    }
+
+    function formatAdminDate(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      const lang = window.BIRTHDAY_CONFIG?.locale?.language || 'en';
+      const wd = d.toLocaleDateString(lang, { weekday: 'short' }).replace('.', '').toUpperCase();
+      const day = String(d.getDate()).padStart(2, '0');
+      const mo = d.toLocaleDateString(lang, { month: 'short' }).replace('.', '').toUpperCase();
+      return `${wd} ${day} ${mo}`;
+    }
+
+    function renderAdminEventos() {
+      const events = appState.adminData?.events;
+      if (!events) return adminLoadingStub();
+      const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
+      const rsvps = appState.adminData?.rsvps || {};
+      const rows = sorted.map(e => {
+        const isPrivate = e.visibility === 'private';
+        const counts = rsvps[e.id] || { yes: [], no: [], pending: [], plusOnes: [], total: 0 };
+        const plusCount = counts.plusOnes?.length || 0;
+        return `<article data-admin-event-tile="${escapeHtml(e.id)}" style="
+          background:${C.surface2};padding:22px 24px;cursor:pointer;transition:background .2s;
+        ">
+          <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:6px;flex-wrap:wrap;">
+            <span style="font:500 10.5px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">${formatAdminDate(e.date)}</span>
+            ${isPrivate ? `<span style="font:500 10px/1 ${SANS};letter-spacing:0.2em;text-transform:uppercase;color:${C.primaryC};">${window.BIRTHDAY_CONFIG.strings.admin.privateBadge} ${(e.allowedCodes || []).length}</span>` : ''}
+            <span style="margin-left:auto;font:400 12px/1 ${SANS};color:${C.soft};">${escapeHtml(e.time || '')}${e.endTime ? ` – ${escapeHtml(e.endTime)}` : ''}</span>
+          </div>
+          <h3 style="margin:0 0 4px;font:400 22px/1.2 ${SERIF};letter-spacing:-0.01em;color:${C.primary};">${escapeHtml(e.title)}</h3>
+          <p style="margin:0 0 14px;font:400 13px/1.5 ${SANS};color:${C.onSurfaceVar};">${escapeHtml(e.location || '')}</p>
+          <div style="display:flex;gap:22px;font:400 13px/1 ${SANS};color:${C.onSurfaceVar};padding-top:12px;border-top:1px solid ${C.ghostSoft};">
+            <span><strong style="color:${C.primaryC};font-weight:600;font-variant-numeric:tabular-nums;">${counts.yes.length}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.yesLabel}${plusCount > 0 ? ` <span style="color:${C.soft};font-weight:400;">(+${plusCount})</span>` : ''}</span>
+            <span><strong style="color:${C.error};font-weight:600;font-variant-numeric:tabular-nums;">${counts.no.length}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.noLabel}</span>
+            <span><strong style="color:${C.soft};font-weight:600;font-variant-numeric:tabular-nums;">${counts.pending.length}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.pendingLabel}</span>
+          </div>
+        </article>`;
+      }).join('');
+      return `<div>
+        <div style="margin-bottom:24px;">
+          <button data-admin-new-event style="${adminBtnPrimary()}">${window.BIRTHDAY_CONFIG.strings.admin.createEventBtn}</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;">${rows}</div>
+      </div>`;
+    }
+
+    function renderAdminInvitados() {
+      const guests = appState.adminData?.guests;
+      if (!guests) return adminLoadingStub();
+      const rows = guests.map(g => `
+        <div data-admin-guest-tile="${escapeHtml(g.code)}" style="background:${C.surface2};padding:18px 22px;display:flex;align-items:center;gap:18px;cursor:pointer;transition:background .2s;">
+          <div style="flex:1;min-width:0;">
+            <div style="font:400 17px/1.2 ${SERIF};color:${C.primary};">${escapeHtml(g.name)}</div>
+            <div style="margin-top:4px;font:400 12px/1.3 ${SANS};color:${C.soft};">
+              ${escapeHtml(g.code)} · ${g.invitedCount} ${g.invitedCount === 1 ? window.BIRTHDAY_CONFIG.strings.admin.guestTileEvent : window.BIRTHDAY_CONFIG.strings.admin.guestTileEvents}${g.privateCount > 0 ? ` · ${g.privateCount} ${g.privateCount === 1 ? window.BIRTHDAY_CONFIG.strings.admin.privateSingular : window.BIRTHDAY_CONFIG.strings.admin.privatePlural}` : ''}
+              ${g.hasEmail ? ` · ${window.BIRTHDAY_CONFIG.strings.admin.emailSaved}` : ''}
+            </div>
+            <div style="margin-top:6px;display:flex;gap:14px;font:400 11.5px/1 ${SANS};color:${C.onSurfaceVar};">
+              <span><strong style="color:${C.primaryC};font-weight:600;">${g.yes}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.yesLabel}</span>
+              <span><strong style="color:${C.error};font-weight:600;">${g.no}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.noLabel}</span>
+              <span><strong style="color:${C.soft};font-weight:600;">${g.pending}</strong> ${window.BIRTHDAY_CONFIG.strings.admin.pendingLabel}</span>
+            </div>
+          </div>
+          <button data-copy-link="${escapeHtml(g.code)}" style="${adminBtnGhost()};white-space:nowrap;">${window.BIRTHDAY_CONFIG.strings.admin.copyLinkBtn}</button>
+        </div>
+      `).join('');
+      return `<div>
+        <div style="margin-bottom:24px;">
+          <button data-admin-new-guest style="${adminBtnPrimary()}">${window.BIRTHDAY_CONFIG.strings.admin.createGuestBtn}</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>
+      </div>`;
+    }
+
+    function renderAdminConfirmaciones() {
+      const events = appState.adminData?.events;
+      const rsvps = appState.adminData?.rsvps;
+      if (!events || !rsvps) return adminLoadingStub();
+      const allSorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
+
+      const byName = (a, b) => a.name.localeCompare(b.name, 'es');
+
+      // Per-bucket chip styling — color-codes yes/no/pending so each group reads
+      // distinctly even when scrolled past its header label.
+      const CHIP_YES     = `background:${C.tertiaryFixed};color:${C.primary};`;
+      const CHIP_NO      = `background:rgba(186,26,26,0.08);color:#7a2e2e;`;
+      const CHIP_PENDING = `background:${C.surface2};color:${C.onSurfaceVar};`;
+
+      const filter = appState.adminConfirmFilter || 'all';
+      const search = (appState.adminConfirmSearch || '').trim().toLowerCase();
+
+      // Filter at event level: hide events that don't match the global filter
+      const filteredEvents = allSorted.filter(e => {
+        if (filter === 'all') return true;
+        const yes = rsvps[e.id]?.yes?.length || 0;
+        return filter === 'with-yes' ? yes > 0 : yes === 0;
+      });
+
+      // Apply name search to chip lists
+      const matchesSearch = (g) => !search || g.name.toLowerCase().includes(search);
+
+      const renderChip = (g, chipStyle, bucket, eventId, opts = {}) => {
+        const { showPlusOne, showTime } = opts;
+        const plus = showPlusOne && g.plusOne
+          ? ` <span style="font-style:italic;color:${C.primaryC};margin-left:4px;">+1${g.plusOne.name ? ` · ${escapeHtml(g.plusOne.name)}` : ''}</span>`
+          : '';
+        const time = showTime && g.updatedAt
+          ? `<span style="display:block;font:400 10px/1 ${SANS};color:${C.soft};font-style:italic;margin-top:3px;letter-spacing:0;">${timeAgo(g.updatedAt)}</span>`
+          : '';
+        // Bucket "pending" passes empty eventId — its chips don't open the popover with reset
+        // (no RSVP to clear). The popover still works for ver perfil / copy link / WhatsApp.
+        return `<button data-chip-code="${escapeHtml(g.code)}" data-chip-name="${escapeHtml(g.name)}" data-chip-bucket="${bucket}" data-chip-event-id="${escapeHtml(eventId || '')}" style="display:inline-flex;flex-direction:column;align-items:flex-start;text-align:left;font:400 13px/1.25 ${SANS};padding:7px 12px;border:0;cursor:pointer;${chipStyle}">
+          <span>${escapeHtml(g.name)}${plus}</span>${time}
+        </button>`;
+      };
+
+      // YES group: prominent header (host's primary signal), merges +1s into the
+      // headline so the real headcount is the first thing you see.
+      const renderYes = (list, plusCount, eventId) => {
+        const visible = list.filter(matchesSearch);
+        const n = list.length;
+        const total = n + plusCount;
+        let label;
+        const AS = window.BIRTHDAY_CONFIG.strings.admin;
+        if (n === 0) label = AS.nobodyYet;
+        else if (plusCount === 0) label = `${n} ${AS.confirmedPlural}`;
+        else label = `${n} ${AS.confirmedPlural} <span style="color:${C.soft};font-style:italic;font-size:16px;">+ ${plusCount} ${plusCount === 1 ? AS.companionSingular : AS.companionPlural} · ${total} ${AS.totalLabel}</span>`;
+
+        const copyBtn = n > 0
+          ? `<button data-copy-yes-list="${eventId}" title="${window.BIRTHDAY_CONFIG.strings.admin.copyListTitle}" style="background:transparent;border:0;cursor:pointer;color:${C.soft};font:500 10px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;padding:6px 8px;margin-left:auto;align-self:center;">${window.BIRTHDAY_CONFIG.strings.admin.copyListBtn}</button>`
+          : '';
+
+        const chips = visible.length === 0
+          ? (n > 0 && search ? `<p style="margin:10px 0 0;font:400 12px/1 ${SANS};color:${C.soft};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.admin.searchNoMatch} "${escapeHtml(search)}".</p>` : '')
+          : `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">${[...visible].sort(byName).map(g => renderChip(g, CHIP_YES, 'yes', eventId, { showPlusOne: true, showTime: true })).join('')}</div>`;
+
+        return `<div style="margin-top:16px;">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <div style="font:400 22px/1.1 ${SERIF};color:${n > 0 ? C.primaryC : C.soft};letter-spacing:-0.01em;">${label}</div>
+            ${copyBtn}
+          </div>
+          ${chips}
+        </div>`;
+      };
+
+      const renderNo = (list, eventId) => {
+        if (list.length === 0) return '';
+        const visible = list.filter(matchesSearch);
+        if (visible.length === 0 && search) return '';
+        return `<div style="margin-top:14px;">
+          <div style="font:500 10px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;color:${C.error};margin-bottom:8px;">${window.BIRTHDAY_CONFIG.strings.admin.noLabel} · ${list.length}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">${[...visible].sort(byName).map(g => renderChip(g, CHIP_NO, 'no', eventId, { showTime: true })).join('')}</div>
+        </div>`;
+      };
+
+      // PENDING: collapsed by default to let YES dominate the screen. Toggle
+      // expands per-event (state in appState.adminPendientesOpen). When a search
+      // is active, automatically expand so matches are visible.
+      const renderPending = (list, eventId) => {
+        if (list.length === 0) return '';
+        const visible = list.filter(matchesSearch);
+        const open = appState.adminPendientesOpen?.has(eventId) || !!search;
+        const caret = open ? '▾' : '▸';
+        const chips = open
+          ? (visible.length === 0
+              ? (search ? `<p style="margin:8px 0 0;font:400 12px/1 ${SANS};color:${C.soft};font-style:italic;">${window.BIRTHDAY_CONFIG.strings.admin.pendingNoMatch}</p>` : '')
+              : `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">${[...visible].sort(byName).map(g => renderChip(g, CHIP_PENDING, 'pending', eventId)).join('')}</div>`)
+          : '';
+        return `<div style="margin-top:14px;">
+          <button data-toggle-pendientes="${eventId}" style="background:transparent;border:0;cursor:pointer;color:${C.soft};font:500 10px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;padding:0;display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;">${caret}</span> ${window.BIRTHDAY_CONFIG.strings.admin.pendingToggle} · ${list.length}${search ? ` · ${visible.length} ${window.BIRTHDAY_CONFIG.strings.admin.pendingMatches}` : ''}
+          </button>
+          ${chips}
+        </div>`;
+      };
+
+      const sections = filteredEvents.map(e => {
+        const r = rsvps[e.id] || { yes: [], no: [], pending: [], plusOnes: [] };
+        const plusCount = r.plusOnes?.length || 0;
+        return `<section>
+          <header style="display:flex;align-items:baseline;gap:14px;margin-bottom:4px;">
+            <h3 style="margin:0;font:400 20px/1.2 ${SERIF};color:${C.primary};">${escapeHtml(eventTitleWithWeekday(e))}</h3>
+            <span style="font:500 10px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};margin-left:auto;">${formatAdminDate(e.date)}</span>
+          </header>
+          ${renderYes(r.yes, plusCount, e.id)}
+          ${renderNo(r.no, e.id)}
+          ${renderPending(r.pending, e.id)}
+        </section>`;
+      }).join('');
+
+      const filterBtn = (id, label) => {
+        const on = filter === id;
+        return `<button data-confirm-filter="${id}" style="background:${on ? C.primaryC : 'transparent'};color:${on ? C.surface : C.soft};border:0;padding:7px 14px;cursor:pointer;font:600 10px/1 ${SANS};letter-spacing:0.22em;text-transform:uppercase;box-shadow:${on ? 'none' : 'inset 0 0 0 1px ' + C.ghost};">${label}</button>`;
+      };
+
+      const allCount = allSorted.length;
+      const withYesCount = allSorted.filter(e => (rsvps[e.id]?.yes?.length || 0) > 0).length;
+
+      const toolbar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;gap:6px;">
+          ${filterBtn('all', `${window.BIRTHDAY_CONFIG.strings.admin.filterAll} · ${allCount}`)}
+          ${filterBtn('with-yes', `${window.BIRTHDAY_CONFIG.strings.admin.filterWithYes} · ${withYesCount}`)}
+          ${filterBtn('no-yes', `${window.BIRTHDAY_CONFIG.strings.admin.filterEmpty} · ${allCount - withYesCount}`)}
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+          <input data-confirm-search type="text" placeholder="{{strings.admin.searchPlaceholder}}" value="${escapeHtml(appState.adminConfirmSearch || '')}" style="font-family:${SANS};font-size:12px;padding:8px 12px;border:0;background:${C.surface2};color:${C.primary};outline:none;width:200px;"/>
+          ${search ? `<button data-confirm-search-clear style="background:transparent;border:0;cursor:pointer;color:${C.soft};font:500 10px/1 ${SANS};letter-spacing:0.18em;text-transform:uppercase;">${window.BIRTHDAY_CONFIG.strings.admin.clearSearch}</button>` : ''}
+        </div>
+      </div>`;
+
+      const empty = sections === ''
+        ? `<p style="margin:24px 0;font-family:${SERIF};font-style:italic;color:${C.soft};">${window.BIRTHDAY_CONFIG.strings.admin.noEventsMatch}</p>`
+        : '';
+
+      return `<div style="display:flex;flex-direction:column;gap:36px;">${toolbar}${sections}${empty}</div>`;
+    }
+
+    // ─── Main timeline (#2 + #3) ─────────────────────────────────
+    // Day section: header (weekday + day number + month) + event cards for that day
+    function renderDaySection(day, events, startDateStr) {
+      const date = events[0].date;
+      const weekday = weekdayShort(date);
+      const dateObj = new Date(date + 'T12:00:00');
+      const dateNum = dateObj.getDate();
+      const monthShort = dateObj.toLocaleDateString(window.BIRTHDAY_CONFIG?.locale?.language || 'en', { month: 'short' }).toUpperCase();
+
+      return `<section id="day-${day}" style="display:flex;flex-direction:column;gap:14px;scroll-margin-top:80px;">
+        <header style="display:flex;align-items:baseline;gap:14px;padding-bottom:14px;">
+          <span style="font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.22em;
+            text-transform:uppercase;color:${C.onSurfaceVar};">${escapeHtml(weekday)}</span>
+          <span style="font-family:${SERIF};font-size:34px;font-weight:400;color:${C.primary};
+            letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1;">${String(dateNum).padStart(2,'0')}</span>
+          <span style="font-family:${SANS};font-size:9.5px;font-weight:500;letter-spacing:0.22em;
+            text-transform:uppercase;color:${C.soft};margin-left:auto;">${escapeHtml(monthShort)}</span>
+        </header>
+        ${events.map(e => renderEventCard(e, startDateStr)).join('')}
+      </section>`;
+    }
+
+    function renderTimeline(data) {
+      if (isDesktop()) return renderDesktopTimeline(data);
+      const { guest, events, birthdayWeek } = data;
+      const startDate = birthdayWeek.startDate;
+      const days = buildWeekDays(events, startDate);
+      const active = appState.activeDay || activeDay(events, startDate);
+      const daysToStart = daysUntil(startDate);
+      const privateCount = events.filter(e => e.visibility === 'private' || e.forYou).length;
+      const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date));
+
+      // Group events by their day-of-week (1..7)
+      const grouped = sortedEvents.reduce((acc, e) => {
+        const d = dayOfWeek(e.date, startDate);
+        (acc[d] = acc[d] || []).push(e);
+        return acc;
+      }, {});
+      const dayKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+
+      const headerLabel = privateCount > 0
+        ? `${events.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel} · ${privateCount} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsForYou}`
+        : `${events.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel}`;
+
+      const attendingCount = attendingEventIds().length;
+
+      return `<div style="min-height:100vh;padding-bottom:120px;">
+        ${renderHero(guest, daysToStart)}
+        ${renderWeekStrip(days, active)}
+        <section class="page-enter page-enter-3" style="padding:22px 20px 28px;
+          display:flex;flex-direction:column;gap:32px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;">
+            ${renderLabel(window.BIRTHDAY_CONFIG.strings.rsvp.theWeek, { color: C.onSurfaceVar })}
+            ${renderLabel(headerLabel, { color: C.soft, size: 9.5 })}
+          </div>
+          ${dayKeys.map(d => renderDaySection(d, grouped[d], startDate)).join('')}
+        </section>
+        ${renderStickyCTA(attendingCount, appState.hasConfirmedOnce)}
+        ${renderConfirmModal()}
+      </div>`;
+    }
+
+    // Chip popover: opens when host clicks a guest chip in Confirmaciones.
+    // Actions adapt by bucket — pending chips skip "Limpiar RSVP" since there's
+    // no RSVP to clear.
+    function renderChipPopover() {
+      const p = appState.adminChipPopover;
+      if (!p) return '';
+      const inviteLink = `${window.BIRTHDAY_CONFIG?.site?.domain || ''}/?code=${p.code}`;
+      const hostName = window.BIRTHDAY_CONFIG?.host?.name || 'the host';
+      const siteTitle = window.BIRTHDAY_CONFIG?.site?.title || 'the birthday week';
+      const PS = window.BIRTHDAY_CONFIG.strings.admin;
+      const waText = encodeURIComponent(`${PS.whatsAppTemplate} ${p.name}, ${PS.whatsAppMiddle} ${siteTitle} (${hostName}): ${inviteLink}`);
+      const item = (attrs, label, color = C.primary) =>
+        `<button ${attrs} style="display:block;width:100%;text-align:left;background:transparent;border:0;cursor:pointer;padding:10px 16px;font:400 13px/1 ${SANS};color:${color};">${label}</button>`;
+      const linkItem = (href, label) =>
+        `<a href="${href}" target="_blank" rel="noreferrer" style="display:block;width:100%;text-align:left;text-decoration:none;padding:10px 16px;font:400 13px/1 ${SANS};color:${C.primary};">${label}</a>`;
+      // Clamp to viewport so popover doesn't fall off-screen.
+      const left = Math.max(120, Math.min(window.innerWidth - 120, p.x));
+      const top = Math.min(window.innerHeight - 220, p.y);
+      return `<div data-chip-popover-backdrop style="position:fixed;inset:0;z-index:40;">
+        <div data-chip-popover style="position:absolute;left:${left}px;top:${top}px;transform:translate(-50%,8px);min-width:220px;background:${C.surface};box-shadow:0 12px 40px rgba(0,46,36,0.18);padding:6px 0;">
+          <div style="padding:10px 16px 8px;font:400 14px/1.2 ${SERIF};color:${C.primary};border-bottom:1px solid ${C.ghost};margin-bottom:4px;">${escapeHtml(p.name)}</div>
+          ${item(`data-popover-action="profile"`, PS.popoverProfile)}
+          ${item(`data-popover-action="copy" data-copy-text="${escapeHtml(inviteLink)}"`, PS.popoverCopyLink)}
+          ${linkItem(`https://wa.me/?text=${waText}`, PS.popoverWhatsApp)}
+          ${p.bucket && p.bucket !== 'pending' && p.eventId ? item(`data-popover-action="reset"`, PS.popoverClearRsvp, C.error) : ''}
+        </div>
+      </div>`;
+    }
+
+    function renderToast() {
+      const t = appState.adminToast;
+      if (!t) return '';
+      return `<div class="toast-in" style="position:fixed;left:50%;bottom:32px;z-index:60;transform:translate(-50%,0);background:${C.primary};color:${C.surface};padding:12px 22px;font:500 12px/1 ${SANS};letter-spacing:0.16em;text-transform:uppercase;box-shadow:0 12px 30px rgba(0,46,36,0.25);">${escapeHtml(t)}</div>`;
+    }
+
+    function showToast(msg) {
+      appState.adminToast = msg;
+      rerender();
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { appState.adminToast = null; rerender(); }, 2200);
+    }
+
+    // ─── Mount ───────────────────────────────────────────────────
+    function render() {
+      const app = document.getElementById('app');
+      let html = '';
+      if (appState.view === 'loading')       html = renderLoadingScreen();
+      else if (appState.view === 'error')    html = renderInvalidCode(appState.errorMessage);
+      else if (appState.view === 'success')  html = renderSuccessScreen() + renderConfirmModal();
+      else if (appState.view === 'timeline') html = renderTimeline(appState.data);
+      else if (appState.view === 'admin') {
+        html = (appState.adminEdit  ? renderAdminEditView()
+             :  appState.guestEdit  ? renderGuestEditView()
+                                    : renderAdminShell())
+             + renderChipPopover();
+      }
+      app.innerHTML = html + renderToast();
+    }
+
+    function rerender() {
+      const scrollY = window.scrollY;
+      render();
+      window.scrollTo(0, scrollY);
+    }
+
+    // Surgical: replace just one event's card without rerendering the whole page.
+    // Avoids the "horrible animation" flash from wiping the entire DOM on toggle clicks.
+    function updateEventCardInDOM(eventId) {
+      const el = document.querySelector(`[data-event-id="${eventId}"]`);
+      if (!el || !appState.data) return;
+      const event = appState.data.events.find(e => e.id === eventId);
+      if (!event) return;
+      const startDate = appState.data.birthdayWeek.startDate;
+      const newHtml = (isDesktop() ? renderKitTile(event) : renderEventCard(event, startDate)).trim();
+      const temp = document.createElement('template');
+      temp.innerHTML = newHtml;
+      const newEl = temp.content.firstElementChild;
+      if (newEl) el.replaceWith(newEl);
+    }
+
+    // ─── Handlers ────────────────────────────────────────────────
+    async function handleRsvp(eventId, variant) {
+      const current = getEventRsvp(eventId);
+      let newStatus;
+      if (variant === 'yes') newStatus = current === 'attending' ? null : 'attending';
+      else if (variant === 'no') newStatus = current === 'not-attending' ? null : 'not-attending';
+
+      // Store null (don't delete) so toggling off overrides any stale API-returned status
+      // for events RSVP'd in a prior session — otherwise getEventRsvp falls through to
+      // event.rsvp.status from the server and the tile + count disagree.
+      appState.rsvpStates[eventId] = newStatus;
+
+      // Reset success view if user edits after confirming
+      // (treated as a return to timeline; modal closed)
+
+      delete appState.rsvpErrors[eventId];
+
+      // Switching away from 'attending' wipes any in-flight plus-one — they can't
+      // bring someone to an event they're not going to.
+      if (newStatus !== 'attending') delete appState.plusOneStates[eventId];
+
+      rerender();
+
+      if (newStatus !== null) {
+        try {
+          const code = getCode();
+          const payload = { code, eventId, status: newStatus };
+          if (newStatus === 'not-attending') payload.plusOne = null;
+          const res = await fetch('/api/rsvp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) throw new Error(window.BIRTHDAY_CONFIG.strings.admin.rsvpNotSaved);
+        } catch (err) {
+          appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
+          rerender();
+        }
+      }
+    }
+
+    async function handlePlusOneToggle(eventId, enabled) {
+      const current = getEventPlusOne(eventId);
+      appState.plusOneStates[eventId] = enabled
+        ? { enabled: true, name: current?.name || '' }
+        : { enabled: false, name: '' };
+      updateEventCardInDOM(eventId);
+
+      try {
+        const code = getCode();
+        const res = await fetch('/api/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code, eventId, status: 'attending',
+            plusOne: enabled ? { name: current?.name || '' } : null,
+          }),
+        });
+        if (!res.ok) throw new Error();
+      } catch {
+        appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
+        rerender();
+      }
+    }
+
+    async function commitPlusOneName(eventId) {
+      const state = appState.plusOneStates[eventId];
+      if (!state?.enabled) return;
+      try {
+        const code = getCode();
+        const res = await fetch('/api/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code, eventId, status: 'attending',
+            plusOne: { name: state.name || '' },
+          }),
+        });
+        if (!res.ok) throw new Error();
+      } catch {
+        appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
+        rerender();
+      }
+    }
+
+    function openConfirmModal() {
+      if (attendingEventIds().length === 0) return;
+      appState.modalState = appState.hasEmailOnFile ? 'emailOnFile' : 'default';
+      appState.modalError = null;
+      rerender();
+    }
+
+    async function submitConfirm() {
+      const eventIds = attendingEventIds();
+      if (eventIds.length === 0) {
+        appState.modalState = 'closed';
+        rerender();
+        return;
+      }
+
+      // Determine email to send
+      let email = null;
+      if (appState.modalState === 'emailOnFile') {
+        // Use server-stored email (API picks it up from guest record)
+      } else {
+        const input = document.querySelector('[data-confirm-email]');
+        const typed = (input?.value || '').trim();
+        if (!typed || !typed.includes('@')) {
+          appState.modalError = window.BIRTHDAY_CONFIG.strings.modal.invalidEmail;
+          appState.modalState = 'error';
+          appState.typedEmail = typed;
+          rerender();
+          return;
+        }
+        appState.typedEmail = typed;
+        email = typed;
+      }
+
+      appState.modalState = 'sending';
+      rerender();
+
+      try {
+        const code = getCode();
+        const body = { code, eventIds };
+        if (email) body.email = email;
+        const res = await fetch('/api/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.modal.errorDefault);
+        }
+        // Success: capture confirmed snapshot for the success screen
+        const confirmedEvents = (appState.data?.events || [])
+          .filter(e => eventIds.includes(e.id))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        appState.confirmedEvents = confirmedEvents;
+        appState.confirmedEmail = email || appState.confirmedEmail || window.BIRTHDAY_CONFIG.strings.modal.emailPlaceholder;
+        appState.hasConfirmedOnce = true;
+        appState.hasEmailOnFile = true;
+        appState.modalState = 'closed';
+        appState.view = 'success';
+        rerender();
+      } catch (err) {
+        appState.modalError = err.message;
+        appState.modalState = 'error';
+        rerender();
+      }
+    }
+
+    async function loadAdminData() {
+      const code = getCode();
+      try {
+        const [evRes, gRes, rRes] = await Promise.all([
+          fetch(`/api/admin/events?code=${encodeURIComponent(code)}`),
+          fetch(`/api/admin/guests?code=${encodeURIComponent(code)}`),
+          fetch(`/api/admin/rsvps?code=${encodeURIComponent(code)}`),
+        ]);
+        if (!evRes.ok || !gRes.ok || !rRes.ok) throw new Error('admin load failed');
+        const [ev, g, r] = await Promise.all([evRes.json(), gRes.json(), rRes.json()]);
+        appState.adminData = { events: ev.events, guests: g.guests, rsvps: r.rsvps };
+        rerender();
+      } catch (err) {
+        console.error('Admin data load failed:', err);
+      }
+    }
+
+    function openAdminEdit(eventId) {
+      const events = appState.adminData?.events || [];
+      const existing = eventId ? events.find(e => e.id === eventId) : null;
+      appState.adminEdit = {
+        mode: existing ? 'edit' : 'new',
+        id: existing?.id || '',
+        draft: existing
+          ? JSON.parse(JSON.stringify(existing))
+          : {
+              title: '', date: '', time: '20:00', endTime: '',
+              location: '', mapsUrl: '', description: '',
+              visibility: 'public', allowedCodes: [], personalNotes: {},
+              dressCode: '', attendees: 0, allowPlusOne: true,
+            },
+        saving: false, deleting: false, error: null,
+      };
+      rerender();
+    }
+
+    function closeAdminEdit() {
+      appState.adminEdit = null;
+      rerender();
+    }
+
+    async function saveAdminEvent() {
+      const edit = appState.adminEdit;
+      if (!edit) return;
+      if (!edit.draft.title || !edit.draft.date || !edit.draft.time) {
+        edit.error = window.BIRTHDAY_CONFIG.strings.admin.missingFields;
+        rerender();
+        return;
+      }
+      edit.saving = true; edit.error = null;
+      rerender();
+      try {
+        const payload = { ...edit.draft };
+        if (edit.id) payload.id = edit.id;
+        const res = await fetch('/api/admin/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: getCode(), event: payload }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
+        }
+        closeAdminEdit();
+        loadAdminData();
+      } catch (err) {
+        edit.saving = false;
+        edit.error = err.message;
+        rerender();
+      }
+    }
+
+    async function deleteAdminEvent() {
+      const edit = appState.adminEdit;
+      if (!edit || edit.mode !== 'edit') return;
+      if (!confirm(window.BIRTHDAY_CONFIG.strings.admin.deleteEventConfirm)) return;
+      edit.deleting = true; edit.error = null;
+      rerender();
+      try {
+        const res = await fetch('/api/admin/event', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: getCode(), id: edit.id }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
+        }
+        closeAdminEdit();
+        loadAdminData();
+      } catch (err) {
+        edit.deleting = false;
+        edit.error = err.message;
+        rerender();
+      }
+    }
+
+    function openGuestEdit(targetCode) {
+      const guests = appState.adminData?.guests || [];
+      const existing = targetCode ? guests.find(g => g.code === targetCode) : null;
+      appState.guestEdit = {
+        mode: existing ? 'edit' : 'new',
+        originalCode: existing?.code || '',
+        draft: existing
+          ? { name: existing.name, code: existing.code, gender: existing.gender || '', email: existing.email || '', isHost: !!existing.isHost }
+          : { name: '', code: '', gender: '', email: '' },
+        saving: false, deleting: false, error: null,
+      };
+      rerender();
+    }
+
+    function closeGuestEdit() {
+      appState.guestEdit = null;
+      rerender();
+    }
+
+    async function saveAdminGuest() {
+      const edit = appState.guestEdit;
+      if (!edit) return;
+      if (!edit.draft.name?.trim()) {
+        edit.error = window.BIRTHDAY_CONFIG.strings.admin.guestNameRequired;
+        rerender();
+        return;
+      }
+      if (edit.draft.gender !== 'f' && edit.draft.gender !== 'm') {
+        edit.error = window.BIRTHDAY_CONFIG.strings.admin.guestGenderRequired;
+        rerender();
+        return;
+      }
+      edit.saving = true; edit.error = null;
+      rerender();
+      try {
+        const payload = {
+          code: getCode(),
+          guest: {
+            name: edit.draft.name,
+            gender: edit.draft.gender || undefined,
+            email: edit.draft.email || undefined,
+          },
+        };
+        if (edit.originalCode) payload.originalCode = edit.originalCode;
+        const res = await fetch('/api/admin/guest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
+        }
+        closeGuestEdit();
+        loadAdminData();
+      } catch (err) {
+        edit.saving = false;
+        edit.error = err.message;
+        rerender();
+      }
+    }
+
+    async function deleteAdminGuest() {
+      const edit = appState.guestEdit;
+      if (!edit || edit.mode !== 'edit') return;
+      if (!confirm(`${window.BIRTHDAY_CONFIG.strings.admin.deleteGuestConfirmPrefix} ${edit.draft.name}? ${window.BIRTHDAY_CONFIG.strings.admin.deleteGuestConfirmSuffix}`)) return;
+      edit.deleting = true; edit.error = null;
+      rerender();
+      try {
+        const res = await fetch('/api/admin/guest', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: getCode(), targetCode: edit.originalCode }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
+        }
+        closeGuestEdit();
+        loadAdminData();
+      } catch (err) {
+        edit.deleting = false;
+        edit.error = err.message;
+        rerender();
+      }
+    }
+
+    async function loadBroadcastPreview() {
+      appState.broadcast.recipientCount = null;
+      rerender();
+      try {
+        const res = await fetch('/api/admin/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: getCode(), segment: appState.broadcast.segment, preview: true }),
+        });
+        if (!res.ok) throw new Error();
+        const j = await res.json();
+        appState.broadcast.recipientCount = j.count;
+        rerender();
+      } catch {
+        appState.broadcast.recipientCount = 0;
+        rerender();
+      }
+    }
+
+    async function sendBroadcast() {
+      const b = appState.broadcast;
+      if (!b.subject?.trim() || !b.body?.trim()) {
+        b.error = window.BIRTHDAY_CONFIG.strings.admin.broadcastMissingError;
+        rerender();
+        return;
+      }
+      if (!confirm(`${window.BIRTHDAY_CONFIG.strings.admin.sendConfirmPrefix} ${b.recipientCount} ${b.recipientCount === 1 ? window.BIRTHDAY_CONFIG.strings.admin.sendConfirmSingular : window.BIRTHDAY_CONFIG.strings.admin.sendConfirmPlural}?`)) return;
+      b.sending = true; b.error = null; b.sentResult = null;
+      rerender();
+      try {
+        const res = await fetch('/api/admin/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: getCode(),
+            segment: b.segment,
+            subject: b.subject,
+            body: b.body,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.sendFailed);
+        }
+        const j = await res.json();
+        b.sending = false;
+        b.sentResult = j;
+        b.subject = '';
+        b.body = '';
+        rerender();
+      } catch (err) {
+        b.sending = false;
+        b.error = err.message;
+        rerender();
+      }
+    }
+
+    function closeModal() {
+      appState.modalState = 'closed';
+      appState.modalError = null;
+      rerender();
+    }
+
+    function backToTimeline() {
+      appState.view = 'timeline';
+      appState.modalState = 'closed';
+      rerender();
+    }
+
+    // ─── Event delegation ────────────────────────────────────────
+    function onAppClick(e) {
+      // Modal: backdrop click (close)
+      const backdrop = e.target.closest('[data-modal-backdrop]');
+      if (backdrop && e.target === backdrop) {
+        closeModal();
+        return;
+      }
+      if (e.target.closest('[data-modal-close]')) { closeModal(); return; }
+
+      if (e.target.closest('[data-confirm-submit]'))    { submitConfirm(); return; }
+      if (e.target.closest('[data-confirm-cta]'))       { openConfirmModal(); return; }
+      if (e.target.closest('[data-back-to-timeline]'))  { backToTimeline(); return; }
+
+      const retry = e.target.closest('[data-retry-rsvp]');
+      if (retry) {
+        const eventId = retry.dataset.retryRsvp;
+        const status = getEventRsvp(eventId);
+        if (status) {
+          // Re-issue the RSVP call with current state
+          delete appState.rsvpErrors[eventId];
+          rerender();
+          (async () => {
+            try {
+              const code = getCode();
+              const res = await fetch('/api/rsvp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, eventId, status }),
+              });
+              if (!res.ok) throw new Error();
+            } catch {
+              appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
+              rerender();
+            }
+          })();
+        }
+        return;
+      }
+
+      const rsvp = e.target.closest('[data-rsvp]');
+      if (rsvp) {
+        handleRsvp(rsvp.dataset.rsvp, rsvp.dataset.action);
+        return;
+      }
+
+      const plusOneToggle = e.target.closest('[data-plus-one-toggle]');
+      if (plusOneToggle) {
+        handlePlusOneToggle(plusOneToggle.dataset.plusOneToggle, plusOneToggle.checked);
+        return;
+      }
+
+      const toggle = e.target.closest('[data-toggle]');
+      if (toggle) {
+        const eventId = toggle.dataset.toggle;
+        if (appState.expandedCards.has(eventId)) appState.expandedCards.delete(eventId);
+        else appState.expandedCards.add(eventId);
+        updateEventCardInDOM(eventId);
+        return;
+      }
+
+      // Admin tab switch
+      const adminTab = e.target.closest('[data-admin-tab]');
+      if (adminTab) {
+        appState.adminTab = adminTab.dataset.adminTab;
+        rerender();
+        if (appState.adminTab === 'mensaje' && appState.broadcast.recipientCount === null) {
+          loadBroadcastPreview();
+        }
+        return;
+      }
+
+      // Admin Confirmaciones: toggle pendientes list per event
+      const togglePend = e.target.closest('[data-toggle-pendientes]');
+      if (togglePend) {
+        const eid = togglePend.dataset.togglePendientes;
+        if (appState.adminPendientesOpen.has(eid)) appState.adminPendientesOpen.delete(eid);
+        else appState.adminPendientesOpen.add(eid);
+        rerender();
+        return;
+      }
+
+      // Admin Confirmaciones: top-level event filter
+      const cf = e.target.closest('[data-confirm-filter]');
+      if (cf) {
+        appState.adminConfirmFilter = cf.dataset.confirmFilter;
+        rerender();
+        return;
+      }
+
+      // Admin Confirmaciones: clear search
+      if (e.target.closest('[data-confirm-search-clear]')) {
+        appState.adminConfirmSearch = '';
+        rerender();
+        return;
+      }
+
+      // Admin Confirmaciones: per-event "copiar lista" — yes names to clipboard
+      const copyYes = e.target.closest('[data-copy-yes-list]');
+      if (copyYes) {
+        const eid = copyYes.dataset.copyYesList;
+        const yes = appState.adminData?.rsvps?.[eid]?.yes || [];
+        const plusOnes = appState.adminData?.rsvps?.[eid]?.plusOnes || [];
+        const lines = [
+          ...yes.map(g => g.name + (g.plusOne ? ` (+1${g.plusOne.name ? ': ' + g.plusOne.name : ''})` : '')),
+        ];
+        navigator.clipboard.writeText(lines.join('\n')).then(
+          () => showToast(`${window.BIRTHDAY_CONFIG.strings.admin.toastCopiedList} ${yes.length}${plusOnes.length ? ' + ' + plusOnes.length + ' ' + window.BIRTHDAY_CONFIG.strings.admin.toastPlusOnes : ''}`),
+          () => showToast(window.BIRTHDAY_CONFIG.strings.admin.toastCopyFailed)
+        );
+        return;
+      }
+
+      // Admin Confirmaciones: chip click → popover
+      const chip = e.target.closest('[data-chip-code]');
+      if (chip) {
+        const rect = chip.getBoundingClientRect();
+        appState.adminChipPopover = {
+          code: chip.dataset.chipCode,
+          name: chip.dataset.chipName,
+          bucket: chip.dataset.chipBucket,
+          eventId: chip.dataset.chipEventId || null,
+          x: rect.left + rect.width / 2,
+          y: rect.bottom,
+        };
+        rerender();
+        return;
+      }
+
+      // Popover: backdrop click closes (but not clicks on the popover itself)
+      const popBackdrop = e.target.closest('[data-chip-popover-backdrop]');
+      if (popBackdrop && !e.target.closest('[data-chip-popover]')) {
+        appState.adminChipPopover = null;
+        rerender();
+        return;
+      }
+
+      // Popover actions
+      const popAction = e.target.closest('[data-popover-action]');
+      if (popAction) {
+        const p = appState.adminChipPopover;
+        if (!p) return;
+        const act = popAction.dataset.popoverAction;
+        if (act === 'profile') {
+          appState.adminChipPopover = null;
+          openGuestEdit(p.code);
+        } else if (act === 'copy') {
+          navigator.clipboard.writeText(popAction.dataset.copyText || '').then(
+            () => showToast(window.BIRTHDAY_CONFIG.strings.admin.toastLinkCopied),
+            () => showToast(window.BIRTHDAY_CONFIG.strings.admin.toastCopyFailed)
+          );
+          appState.adminChipPopover = null;
+          rerender();
+        } else if (act === 'reset') {
+          (async () => {
+            try {
+              const res = await fetch('/api/admin/rsvp', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: getCode(), targetCode: p.code, eventId: p.eventId }),
+              });
+              if (!res.ok) throw new Error();
+              // Reload admin data so the chip moves to pending
+              await loadAdminData();
+              showToast(window.BIRTHDAY_CONFIG.strings.admin.toastRsvpCleared);
+            } catch {
+              showToast(window.BIRTHDAY_CONFIG.strings.admin.toastClearFailed);
+            }
+          })();
+          appState.adminChipPopover = null;
+          rerender();
+        }
+        return;
+      }
+
+      // Admin: create new event
+      if (e.target.closest('[data-admin-new-event]')) { openAdminEdit(null); return; }
+      // Admin: click event tile → edit
+      const eventTile = e.target.closest('[data-admin-event-tile]');
+      if (eventTile) { openAdminEdit(eventTile.dataset.adminEventTile); return; }
+      // Admin edit form actions
+      if (e.target.closest('[data-admin-edit-close]'))  { closeAdminEdit(); return; }
+      if (e.target.closest('[data-admin-edit-save]'))   { saveAdminEvent(); return; }
+      if (e.target.closest('[data-admin-edit-delete]')) { deleteAdminEvent(); return; }
+
+      // Admin: guest CRUD
+      if (e.target.closest('[data-admin-new-guest]'))   { openGuestEdit(null); return; }
+      const copyBtnEarly = e.target.closest('[data-copy-link]');
+      const guestTile = e.target.closest('[data-admin-guest-tile]');
+      if (guestTile && !copyBtnEarly) { openGuestEdit(guestTile.dataset.adminGuestTile); return; }
+      if (e.target.closest('[data-guest-edit-close]'))  { closeGuestEdit(); return; }
+      if (e.target.closest('[data-guest-edit-save]'))   { saveAdminGuest(); return; }
+      if (e.target.closest('[data-guest-edit-delete]')) { deleteAdminGuest(); return; }
+
+      // Broadcast: segment selector + send
+      const segPick = e.target.closest('[data-broadcast-segment]');
+      if (segPick) {
+        appState.broadcast.segment = segPick.dataset.broadcastSegment;
+        appState.broadcast.sentResult = null;
+        appState.broadcast.error = null;
+        rerender();
+        loadBroadcastPreview();
+        return;
+      }
+      if (e.target.closest('[data-broadcast-send]')) { sendBroadcast(); return; }
+
+      // Admin: copy guest invite link to clipboard
+      const copyBtn = e.target.closest('[data-copy-link]');
+      if (copyBtn) {
+        const code = copyBtn.dataset.copyLink;
+        const url = `${location.origin}/?code=${encodeURIComponent(code)}`;
+        const original = copyBtn.textContent;
+        (navigator.clipboard?.writeText
+          ? navigator.clipboard.writeText(url)
+          : Promise.reject()
+        ).then(() => {
+          copyBtn.textContent = window.BIRTHDAY_CONFIG.strings.admin.copiedFeedback;
+          setTimeout(() => { copyBtn.textContent = original; }, 1600);
+        }).catch(() => {
+          copyBtn.textContent = url;
+          setTimeout(() => { copyBtn.textContent = original; }, 2600);
+        });
+        return;
+      }
+
+      // WeekStrip day click → move underline + scroll to that day's section
+      const dayBtn = e.target.closest('[data-day]');
+      if (dayBtn) {
+        const dayNum = Number(dayBtn.dataset.day);
+        appState.activeDay = dayNum;
+        rerender();
+        const section = document.getElementById(`day-${dayNum}`);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+    }
+
+    function onAppKeydown(e) {
+      if (e.key === 'Enter') {
+        const input = e.target.closest('[data-confirm-email]');
+        if (input && input.value && input.value.includes('@')) submitConfirm();
+      } else if (e.key === 'Escape') {
+        if (appState.modalState !== 'closed') closeModal();
+      }
+    }
+
+    function onInputCapture(e) {
+      const input = e.target.closest('[data-confirm-email]');
+      if (input) { appState.typedEmail = input.value; return; }
+
+      // Admin Confirmaciones search — live filter; rerender then restore focus
+      // (rerender wipes the DOM so the input would otherwise lose focus mid-typing).
+      const searchInput = e.target.closest('[data-confirm-search]');
+      if (searchInput) {
+        appState.adminConfirmSearch = searchInput.value;
+        rerender();
+        const refocus = document.querySelector('[data-confirm-search]');
+        if (refocus) {
+          refocus.focus();
+          const len = refocus.value.length;
+          refocus.setSelectionRange(len, len);
+        }
+        return;
+      }
+
+      // Plus-one name typing — track in state, don't fire API or rerender
+      // (keystroke rerender would steal focus from the input).
+      const plusName = e.target.closest('[data-plus-one-name]');
+      if (plusName) {
+        appState.plusOneStates[plusName.dataset.plusOneName] = { enabled: true, name: plusName.value };
+        return;
+      }
+
+      // Guest edit form fields
+      if (appState.guestEdit) {
+        const gf = e.target.closest('[data-edit-field]');
+        if (gf) {
+          appState.guestEdit.draft[gf.dataset.editField] = gf.value;
+          return;
+        }
+      }
+
+      // Admin edit form fields
+      if (appState.adminEdit) {
+        const f = e.target.closest('[data-edit-field]');
+        if (f) {
+          const name = f.dataset.editField;
+          let val;
+          if (f.type === 'checkbox') val = f.checked;
+          else if (name === 'attendees') val = Number(f.value) || 0;
+          else val = f.value;
+          appState.adminEdit.draft[name] = val;
+          if (name === 'visibility') rerender();
+          return;
+        }
+        const a = e.target.closest('[data-edit-allowed]');
+        if (a) {
+          const code = a.dataset.editAllowed;
+          const set = new Set(appState.adminEdit.draft.allowedCodes || []);
+          if (a.checked) set.add(code); else set.delete(code);
+          appState.adminEdit.draft.allowedCodes = [...set];
+          rerender();
+          return;
+        }
+        const n = e.target.closest('[data-edit-note]');
+        if (n) {
+          const code = n.dataset.editNote;
+          const notes = { ...(appState.adminEdit.draft.personalNotes || {}) };
+          if (n.value) notes[code] = n.value; else delete notes[code];
+          appState.adminEdit.draft.personalNotes = notes;
+          return;
+        }
+      }
+
+      // Broadcast form fields
+      const bf = e.target.closest('[data-broadcast]');
+      if (bf) {
+        appState.broadcast[bf.dataset.broadcast] = bf.value;
+        return;
+      }
+    }
+
+    document.addEventListener('click', onAppClick);
+    document.addEventListener('keydown', onAppKeydown);
+    // Plus-one name: commit on blur (or Enter, which also blurs in browsers
+    // when the input loses focus via keyboard).
+    document.addEventListener('focusout', (e) => {
+      const plusName = e.target?.closest?.('[data-plus-one-name]');
+      if (plusName) commitPlusOneName(plusName.dataset.plusOneName);
+    });
+    document.addEventListener('input', onInputCapture);
+
+    // Shift+M ×3 within 2s → switch URL to ?code=mat (admin backdoor when on someone else's link)
+    let mShiftCount = 0;
+    let mShiftTimer = null;
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+      if (e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        mShiftCount++;
+        clearTimeout(mShiftTimer);
+        mShiftTimer = setTimeout(() => { mShiftCount = 0; }, 2000);
+        if (mShiftCount >= 3) {
+          mShiftCount = 0;
+          const url = new URL(window.location.href);
+          url.searchParams.set('code', (window.BIRTHDAY_CONFIG?.host?.name || 'host').toLowerCase());
+          window.location.href = url.toString();
+        }
+      }
+    });
+
+    // Re-render on viewport resize (debounced) — switches between mobile/desktop layouts
+    let resizeTimer;
+    let lastIsDesktop = isDesktop();
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const nowDesktop = isDesktop();
+        if (nowDesktop !== lastIsDesktop && appState.view === 'timeline') {
+          lastIsDesktop = nowDesktop;
+          rerender();
+        }
+      }, 150);
+    });
+
+    // ─── Init ────────────────────────────────────────────────────
+    async function init() {
+      render();
+
+      const code = getCode();
+      if (!code) {
+        appState.view = 'error';
+        appState.errorMessage = null;
+        rerender();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/guest?code=${encodeURIComponent(code)}`);
+        if (!res.ok) {
+          appState.view = 'error';
+          appState.errorMessage = res.status >= 500
+            ? (window.BIRTHDAY_CONFIG?.strings?.states?.serverError || null)
+            : null;
+          rerender();
+          return;
+        }
+        const data = await res.json();
+        appState.data = data;
+        appState.hasEmailOnFile = !!data.guest.hasEmail;
+        appState.hasConfirmedOnce = !!data.guest.hasEmail;
+
+        data.events.forEach(ev => {
+          if (ev.rsvp?.status) appState.rsvpStates[ev.id] = ev.rsvp.status;
+        });
+
+        appState.view = data.guest.isHost ? 'admin' : 'timeline';
+        rerender();
+        if (data.guest.isHost) loadAdminData();
+      } catch (err) {
+        appState.view = 'error';
+        appState.errorMessage = null;
+        rerender();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
