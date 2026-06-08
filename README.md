@@ -6,6 +6,8 @@ Each guest gets a personal invite link with a unique code. They see the events t
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mat-lucie/birthday-as-a-service&env=KV_REST_API_URL,KV_REST_API_TOKEN,RESEND_API_KEY,SEED_SECRET)
 
+> ⚠️ Complete steps 1–7 below (personalize + generate your secrets) BEFORE deploying — the default config ships a publicly-known admin code.
+
 ---
 
 ## What you get
@@ -54,6 +56,8 @@ Each guest gets a personal invite link with a unique code. They see the events t
 ## Setup
 
 ### 1. Clone and install
+
+> **Node 18+ required** — the seeder uses the built-in `fetch` API introduced in Node 18.
 
 ```bash
 git clone https://github.com/mat-lucie/birthday-as-a-service.git
@@ -107,7 +111,7 @@ Fill in `.env.local` for local use. For deployed environments, set the same vari
 
 Edit **`birthday.config.js`** — this is the only file you _must_ touch:
 
-- `host.name`, `host.fullName`, `host.age`, `host.email`
+- `host.name`, `host.fullName`, `host.age`
 - `site.title`, `site.headline`, `site.tagline`, `site.domain`
 - `event.startDate`, `event.endDate`, `event.dateRange` (and the short/full variants)
 - `email.fromName`, `email.fromAddress` (must match your verified Resend domain)
@@ -158,15 +162,27 @@ Set `"visibility": "private"` for invite-only events, and add an `"allowedCodes"
 
 The `code` becomes the guest's URL: `/?code=unique-invite-code`. Make codes memorable but not guessable (e.g. `alex-rivera`).
 
-**Important — the host record:**
-One guest must have `"isHost": true`. That guest's `code` is the admin key — visiting `/?code=<host-code>` opens the admin panel. The placeholder in the demo data is `"host-REPLACE_ME"`. **Replace it with a strong random value before seeding**, e.g.:
+**Important — the host record and admin code:**
+One guest must have `"isHost": true`. That guest's `code` is the admin key — visiting `/?code=<host-code>` opens the admin panel. **This code is your only admin credential — treat it like a password.**
+
+The placeholder `host-REPLACE_ME` appears **twice** in `data.json`: once as the host guest's `code`, and once inside the private event's `allowedCodes`. Both must be replaced with the **same** strong random value, otherwise the host loses access to the private event. The easiest way:
+
+```bash
+# macOS
+sed -i '' 's/host-REPLACE_ME/YOUR-RANDOM-CODE/g' data.json
+
+# Linux
+sed -i 's/host-REPLACE_ME/YOUR-RANDOM-CODE/g' data.json
+```
+
+Generate a strong code with:
 
 ```bash
 openssl rand -hex 12
 # example output: a3f9c2d1b4e7f8a0c5d6e9f2
 ```
 
-Set that as your host code in `data.json`.
+Until you replace it, `host-REPLACE_ME` is the publicly-known admin code for anyone who clones this repo.
 
 ### 8. Deploy to Vercel
 
@@ -211,7 +227,7 @@ After editing, run `npm run config` to regenerate the HTML. Also set `locale.htm
 
 ## Theming
 
-The full design system is documented in [`DESIGN_SPEC.md`](./DESIGN_SPEC.md). Visual design is defined in **two places that must be kept in sync** inside `public/index.template.html`:
+The original design rationale is documented in [`DESIGN_SPEC.md`](./DESIGN_SPEC.md). Visual design is defined in **two places that must be kept in sync** inside `public/index.template.html`:
 
 1. **The `:root` CSS variable block** (near the top of the `<style>` section) — governs all CSS-driven layout, surfaces, and shadows.
 2. **The `const C = {…}` / `SERIF` / `SANS` JS constants** (near the top of the `<script>` section, lines ~135–156) — governs event-card rendering and any inline styles applied via JavaScript.
@@ -266,6 +282,18 @@ This runs both the static frontend and the serverless functions locally using yo
 - **Rotate the host code** — treat `isHost: true` code like a password. If it leaks, create a new guest record in the admin panel with `isHost: true` and a new code, then delete the old one.
 - **CSP is preset** — `vercel.json` ships with a strict Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, and Permissions-Policy. Review and tighten the CSP if you add third-party scripts.
 - The seed endpoint (`/api/seed`) is guarded by the `x-seed-secret` header. Once seeding is complete you don't need to expose it further.
+
+---
+
+## Security & limitations
+
+This is a hobby self-host model. Here are the inherent trade-offs so deployers aren't surprised:
+
+- **The host code is the only admin credential.** It is a bearer token — anyone who has it can access the admin panel. Keep `host-REPLACE_ME` replaced with a strong random value; rotate it if it leaks (create a new `isHost: true` guest, delete the old one).
+- **Invite codes are bearer tokens.** Anyone with a guest's invite code can act as that guest — RSVP on their behalf, see their private events. Treat invite codes like one-time passwords and share them carefully.
+- **CSP uses `'unsafe-inline'`** because the app ships as a single inline `<script>` block. XSS defense relies on the app's consistent use of `escapeHtml()` throughout, not on CSP. Do not add user-controlled HTML to the templates without escaping.
+- **Admin endpoints are not rate-limited.** Guest-facing endpoints (`/api/rsvp`, `/api/confirm`, `/api/guest`) are rate-limited; admin endpoints (`/api/admin/*`) are not — they rely solely on the host code for authorization.
+- **Remove demo guests before going live.** `data.json` ships with `demo-alex`, `demo-jordan`, `demo-taylor`, `demo-morgan`, and `demo-casey`. Delete them before seeding your real deployment so strangers can't access your event page.
 
 ---
 

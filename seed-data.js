@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 
 const data = JSON.parse(readFileSync('./data.json', 'utf-8'));
 
-const url = process.env.DEPLOY_URL || 'http://localhost:3000';
+const url = (process.env.DEPLOY_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const secret = process.env.SEED_SECRET;
 
 if (!secret) {
@@ -22,4 +22,4 @@ fetch(`${url}/api/seed`, {
 })
   .then(r => r.json())
   .then(result => console.log('Seeded:', result))
-  .catch(err => console.error('Failed:', err));
+  .catch(err => { console.error('Failed:', err); process.exit(1); });

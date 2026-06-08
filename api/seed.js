@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { timingSafeEqual } from 'node:crypto';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -8,7 +9,20 @@ const redis = new Redis({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.headers['x-seed-secret'] !== process.env.SEED_SECRET) {
+  // Constant-time comparison to guard against timing attacks.
+  // Guards against missing header or missing env var (both treated as unauthorized).
+  const provided = req.headers['x-seed-secret'];
+  const expected = process.env.SEED_SECRET;
+  const authorized = (() => {
+    if (!provided || !expected) return false;
+    try {
+      const a = Buffer.from(provided);
+      const b = Buffer.from(expected);
+      if (a.length !== b.length) return false;
+      return timingSafeEqual(a, b);
+    } catch { return false; }
+  })();
+  if (!authorized) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

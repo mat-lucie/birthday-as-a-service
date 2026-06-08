@@ -608,8 +608,6 @@ export default {
     /**
      * Distance phrases — runtime interpolated with day count.
      */
-    distancePast1:    'yesterday',   // days === -1
-    distancePastPrefix: '',           // `${days} days ago` → prefix is empty, suffix handles it
     distancePastSuffix: 'days ago',
     distancePastDaySuffix: 'day ago',
     distanceToday:    'today',
@@ -675,6 +673,10 @@ export default {
   errors: {
     /** Returned when eventIds[] is empty after validation */
     eventIdsEmpty:       'eventIds[] empty after validation.',
+    /** Returned when guest attempts to add a +1 to an event that disallows it */
+    plusOneNotAllowed:   'Plus-ones are not allowed for this event.',
+    /** Returned when a client hits the rate limit */
+    rateLimited:         'Too many attempts. Please wait a minute.',
     /** Returned when email format is invalid */
     emailInvalid:        'Invalid email address.',
     /**
@@ -735,5 +737,15 @@ export default {
     no:       'No',
     all:      'All',
     back:     'Back',
+
+    // ── Relative-time labels (used in admin panel "last updated" timestamps) ─
+    /** Shown when the update was less than 60 seconds ago */
+    timeNow:         'now',
+    /** Template for minutes ago — {n} is replaced with the count */
+    timeMinutesAgo:  '{n}m ago',
+    /** Template for hours ago — {n} is replaced with the count */
+    timeHoursAgo:    '{n}h ago',
+    /** Template for days ago — {n} is replaced with the count */
+    timeDaysAgo:     '{n}d ago',
   },
 };

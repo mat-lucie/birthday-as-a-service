@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { rsvpLimiter, enforce } from '../lib/ratelimit.js';
+import config from '../birthday.config.js';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
         // explicit clear
       } else if (typeof plusOne === 'object') {
         if (!eventAllowsPlusOne) {
-          return res.status(400).json({ error: 'Este evento no permite +1.' });
+          return res.status(400).json({ error: config.strings.errors.plusOneNotAllowed });
         }
         const stored = {};
         if (plusOne.name && typeof plusOne.name === 'string' && plusOne.name.trim()) {

@@ -28,5 +28,5 @@ export default async function handler(req, res) {
   const existed = await redis.get(key);
   await redis.del(key);
 
-  return res.status(200).json({ ok: true, deleted: !!existed, key });
+  return res.status(200).json({ ok: true, deleted: !!existed });
 }

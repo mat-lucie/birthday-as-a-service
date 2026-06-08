@@ -4,7 +4,6 @@ window.BIRTHDAY_CONFIG = {
   "host": {
     "name": "Sam",
     "fullName": "Sam Rivera",
-    "email": "host@example.com",
     "shortIntro": "turns 30",
     "age": 30
   },
@@ -26,7 +25,8 @@ window.BIRTHDAY_CONFIG = {
     "dateRange": "Jun 1 – 7, 2026",
     "dateRangeShort": "Jun 1–7",
     "dateRangeFull": "June 1 — 7, 2026",
-    "monthYear": "Jun 2026"
+    "monthYear": "Jun 2026",
+    "mainEventId": "jazz-night-fri"
   },
   "email": {
     "fromName": "Sam's Birthday",
@@ -283,8 +283,6 @@ window.BIRTHDAY_CONFIG = {
       "codaText": "And then, silence — until the next trip around the sun.",
       "noCodeErrorPrefix": "This link doesn't know you. Ask",
       "noCodeErrorSuffix": "for yours.",
-      "distancePast1": "yesterday",
-      "distancePastPrefix": "",
       "distancePastSuffix": "days ago",
       "distancePastDaySuffix": "day ago",
       "distanceToday": "today",
@@ -314,6 +312,8 @@ window.BIRTHDAY_CONFIG = {
     },
     "errors": {
       "eventIdsEmpty": "eventIds[] empty after validation.",
+      "plusOneNotAllowed": "Plus-ones are not allowed for this event.",
+      "rateLimited": "Too many attempts. Please wait a minute.",
       "emailInvalid": "Invalid email address.",
       "emailAlreadySaved": "You already have a saved email.",
       "calendarSendFailed": "We could not send you the calendar email:",
@@ -350,7 +350,11 @@ window.BIRTHDAY_CONFIG = {
       "yes": "Yes",
       "no": "No",
       "all": "All",
-      "back": "Back"
+      "back": "Back",
+      "timeNow": "now",
+      "timeMinutesAgo": "{n}m ago",
+      "timeHoursAgo": "{n}h ago",
+      "timeDaysAgo": "{n}d ago"
     }
   }
 };

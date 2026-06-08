@@ -35,8 +35,6 @@ export default {
     name: 'Sam',
     /** Full/formal name for headers and subject lines */
     fullName: 'Sam Rivera',
-    /** Contact email shown to guests when they need help */
-    email: 'host@example.com',
     /** One-liner blurb, e.g. "turns 30" */
     shortIntro: 'turns 30',
     /** Numeric age — used in loading screen and hero copy */
@@ -71,6 +69,11 @@ export default {
     startDate: '2026-06-01',
     /** ISO date of the last day of the birthday week */
     endDate: '2026-06-07',
+    /**
+     * Display-only prose date strings — kept in sync with startDate/endDate by hand.
+     * They do NOT derive from the ISO dates automatically; if you change startDate
+     * or endDate, update dateRange / dateRangeShort / dateRangeFull / monthYear too.
+     */
     /** Human-readable range — used in hero and loading screen */
     dateRange: 'Jun 1 – 7, 2026',
     /** Compact variant used in tight spaces */
@@ -79,6 +82,12 @@ export default {
     dateRangeFull: 'June 1 — 7, 2026',
     /** Month + year label */
     monthYear: 'Jun 2026',
+    /**
+     * The id of the "headliner" birthday event — receives a highlighted
+     * dark-forest hero card treatment. Must match the `id` field of one of
+     * your events in data.json. Set to the Jazz Night celebration in the demo.
+     */
+    mainEventId: 'jazz-night-fri',
   },
 
   email: {
