@@ -274,6 +274,28 @@ export default {
 
   // ── Admin panel ──────────────────────────────────────────────────────────
   admin: {
+    // ── Login screen ──────────────────────────────────────────────
+    /** Admin login screen: page title */
+    loginTitle:             'Admin Login',
+    /** Admin login screen: password field label */
+    loginPasswordLabel:     'Password',
+    /** Admin login screen: password field placeholder */
+    loginPasswordPlaceholder: 'Enter admin password',
+    /** Admin login screen: submit button */
+    loginSubmit:            'Sign in',
+    /** Admin login screen: wrong password message */
+    loginWrongPassword:     'Incorrect password.',
+    /** Admin login screen: too many attempts message */
+    loginTooManyAttempts:   'Too many attempts. Please wait a minute.',
+    /** Admin login screen: generic error */
+    loginError:             'Something went wrong. Please try again.',
+    /** Admin login screen: session expired message */
+    loginSessionExpired:    'Your session expired. Please sign in again.',
+
+    // ── Logout ────────────────────────────────────────────────────
+    /** Admin panel header: logout button */
+    logout:                 'Sign out',
+
     // ── Shell ──────────────────────────────────────────────────────
     /** Admin panel eyebrow label prefix (followed by site.title) */
     eyebrow:          'Admin ·',

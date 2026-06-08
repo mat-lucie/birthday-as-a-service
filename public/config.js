@@ -140,6 +140,15 @@ window.BIRTHDAY_CONFIG = {
       "invalidEmail": "Invalid email. Please double-check."
     },
     "admin": {
+      "loginTitle": "Admin Login",
+      "loginPasswordLabel": "Password",
+      "loginPasswordPlaceholder": "Enter admin password",
+      "loginSubmit": "Sign in",
+      "loginWrongPassword": "Incorrect password.",
+      "loginTooManyAttempts": "Too many attempts. Please wait a minute.",
+      "loginError": "Something went wrong. Please try again.",
+      "loginSessionExpired": "Your session expired. Please sign in again.",
+      "logout": "Sign out",
       "eyebrow": "Admin ·",
       "panelTitle": "Panel",
       "tabEvents": "Events",

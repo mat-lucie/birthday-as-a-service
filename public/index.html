@@ -166,8 +166,9 @@
 
     // ─── State ───────────────────────────────────────────────────
     let appState = {
-      view: 'loading',          // 'loading' | 'timeline' | 'success' | 'error'
+      view: 'loading',          // 'loading' | 'timeline' | 'success' | 'error' | 'admin-login' | 'admin'
       errorMessage: null,
+      adminLoginError: null,    // null | string — inline error on the login screen
       data: null,
       expandedCards: new Set(),
       rsvpStates: {},           // { eventId: 'attending' | 'not-attending' }
@@ -1072,6 +1073,26 @@
       </div>`;
     }
 
+    // ─── Admin login screen ─────────────────────────────────────
+    function renderAdminLogin() {
+      const S = window.BIRTHDAY_CONFIG.strings.admin;
+      const err = appState.adminLoginError;
+      return `<div style="min-height:100vh;background:${C.surface};display:flex;align-items:center;justify-content:center;padding:24px;">
+        <div style="width:100%;max-width:380px;">
+          <p style="margin:0 0 6px;font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">${escapeHtml(S.eyebrow)} Sam's Birthday Week</p>
+          <h1 style="margin:0 0 32px;font-family:${SERIF};font-weight:400;font-size:28px;letter-spacing:-0.02em;color:${C.primary};line-height:1.1;">${escapeHtml(S.loginTitle)}</h1>
+          <div>
+            <label style="font-family:${SANS};font-weight:500;font-size:10.5px;letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};margin-bottom:6px;display:block;">${escapeHtml(S.loginPasswordLabel)}</label>
+            <input data-admin-password type="password" placeholder="${escapeHtml(S.loginPasswordPlaceholder)}"
+              style="width:100%;padding:12px 14px;font-family:${SANS};font-size:15px;color:${C.onSurface};background:${C.surface};border:1px solid ${C.ghost};outline:none;margin-bottom:${err ? '10px' : '20px'};"
+              autocomplete="current-password" />
+            ${err ? `<p style="margin:0 0 14px;font-family:${SANS};font-size:13px;color:${C.error};">${escapeHtml(err)}</p>` : ''}
+            <button data-admin-login-submit style="${adminBtnPrimary()};width:100%;justify-content:center;">${escapeHtml(S.loginSubmit)}</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
     // ─── Admin shell (C.1 — tabs scaffold; C.2/C.3 fill content) ─
     function renderAdminShell() {
       const tabs = [
@@ -1099,6 +1120,7 @@
               <h1 style="margin:0;font-family:${SERIF};font-weight:400;font-size:26px;
                 letter-spacing:-0.02em;color:${C.primary};line-height:1.05;">Panel</h1>
             </div>
+            <button data-admin-logout style="margin-top:4px;font-family:${SANS};font-weight:500;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:${C.soft};background:transparent;border:1px solid ${C.ghost};padding:8px 14px;cursor:pointer;white-space:nowrap;">${escapeHtml(window.BIRTHDAY_CONFIG.strings.admin.logout)}</button>
           </div>
           <nav style="display:flex;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;">
             ${tabs.map(tabBtn).join('')}
@@ -1683,6 +1705,7 @@
       else if (appState.view === 'error')    html = renderInvalidCode(appState.errorMessage);
       else if (appState.view === 'success')  html = renderSuccessScreen() + renderConfirmModal();
       else if (appState.view === 'timeline') html = renderTimeline(appState.data);
+      else if (appState.view === 'admin-login') html = renderAdminLogin();
       else if (appState.view === 'admin') {
         html = (appState.adminEdit  ? renderAdminEditView()
              :  appState.guestEdit  ? renderGuestEditView()
@@ -1866,13 +1889,19 @@
     }
 
     async function loadAdminData() {
-      const code = getCode();
       try {
         const [evRes, gRes, rRes] = await Promise.all([
-          fetch(`/api/admin/events?code=${encodeURIComponent(code)}`),
-          fetch(`/api/admin/guests?code=${encodeURIComponent(code)}`),
-          fetch(`/api/admin/rsvps?code=${encodeURIComponent(code)}`),
+          fetch('/api/admin/events', { credentials: 'same-origin' }),
+          fetch('/api/admin/guests', { credentials: 'same-origin' }),
+          fetch('/api/admin/rsvps',  { credentials: 'same-origin' }),
         ]);
+        // Session expired — drop back to login
+        if (evRes.status === 401 || gRes.status === 401 || rRes.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!evRes.ok || !gRes.ok || !rRes.ok) throw new Error('admin load failed');
         const [ev, g, r] = await Promise.all([evRes.json(), gRes.json(), rRes.json()]);
         appState.adminData = { events: ev.events, guests: g.guests, rsvps: r.rsvps };
@@ -1921,9 +1950,16 @@
         if (edit.id) payload.id = edit.id;
         const res = await fetch('/api/admin/event', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: getCode(), event: payload }),
+          body: JSON.stringify({ event: payload }),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
@@ -1946,9 +1982,16 @@
       try {
         const res = await fetch('/api/admin/event', {
           method: 'DELETE',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: getCode(), id: edit.id }),
+          body: JSON.stringify({ id: edit.id }),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
@@ -1998,7 +2041,6 @@
       rerender();
       try {
         const payload = {
-          code: getCode(),
           guest: {
             name: edit.draft.name,
             gender: edit.draft.gender || undefined,
@@ -2008,9 +2050,16 @@
         if (edit.originalCode) payload.originalCode = edit.originalCode;
         const res = await fetch('/api/admin/guest', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
@@ -2033,9 +2082,16 @@
       try {
         const res = await fetch('/api/admin/guest', {
           method: 'DELETE',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: getCode(), targetCode: edit.originalCode }),
+          body: JSON.stringify({ targetCode: edit.originalCode }),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
@@ -2055,9 +2111,16 @@
       try {
         const res = await fetch('/api/admin/broadcast', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: getCode(), segment: appState.broadcast.segment, preview: true }),
+          body: JSON.stringify({ segment: appState.broadcast.segment, preview: true }),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) throw new Error();
         const j = await res.json();
         appState.broadcast.recipientCount = j.count;
@@ -2081,14 +2144,20 @@
       try {
         const res = await fetch('/api/admin/broadcast', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            code: getCode(),
             segment: b.segment,
             subject: b.subject,
             body: b.body,
           }),
         });
+        if (res.status === 401) {
+          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+          appState.view = 'admin-login';
+          rerender();
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.sendFailed);
@@ -2118,8 +2187,60 @@
       rerender();
     }
 
+    async function handleAdminLogin() {
+      const S = window.BIRTHDAY_CONFIG.strings.admin;
+      const input = document.querySelector('[data-admin-password]');
+      if (!input) return;
+      const password = input.value;
+      if (!password) return;
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        if (res.ok) {
+          appState.adminLoginError = null;
+          appState.view = 'admin';
+          rerender();
+          loadAdminData();
+        } else if (res.status === 401) {
+          appState.adminLoginError = S.loginWrongPassword;
+          rerender();
+        } else if (res.status === 429) {
+          appState.adminLoginError = S.loginTooManyAttempts;
+          rerender();
+        } else {
+          appState.adminLoginError = S.loginError;
+          rerender();
+        }
+      } catch {
+        appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginError;
+        rerender();
+      }
+    }
+
+    async function handleAdminLogout() {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+      } catch { /* ignore network error — drop to login regardless */ }
+      appState.adminLoginError = null;
+      appState.adminData = null;
+      appState.view = 'admin-login';
+      rerender();
+    }
+
     // ─── Event delegation ────────────────────────────────────────
     function onAppClick(e) {
+      // Admin login submit
+      if (e.target.closest('[data-admin-login-submit]')) { handleAdminLogin(); return; }
+      // Admin logout
+      if (e.target.closest('[data-admin-logout]')) { handleAdminLogout(); return; }
+
       // Modal: backdrop click (close)
       const backdrop = e.target.closest('[data-modal-backdrop]');
       if (backdrop && e.target === backdrop) {
@@ -2276,9 +2397,17 @@
             try {
               const res = await fetch('/api/admin/rsvp', {
                 method: 'DELETE',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: getCode(), targetCode: p.code, eventId: p.eventId }),
+                body: JSON.stringify({ targetCode: p.code, eventId: p.eventId }),
               });
+              if (res.status === 401) {
+                appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+                appState.view = 'admin-login';
+                appState.adminChipPopover = null;
+                rerender();
+                return;
+              }
               if (!res.ok) throw new Error();
               // Reload admin data so the chip moves to pending
               await loadAdminData();
@@ -2361,6 +2490,8 @@
       if (e.key === 'Enter') {
         const input = e.target.closest('[data-confirm-email]');
         if (input && input.value && input.value.includes('@')) submitConfirm();
+        const pwInput = e.target.closest('[data-admin-password]');
+        if (pwInput) { handleAdminLogin(); return; }
       } else if (e.key === 'Escape') {
         if (appState.modalState !== 'closed') closeModal();
       }
@@ -2489,6 +2620,14 @@
     async function init() {
       render();
 
+      // /?admin — show admin login screen directly (no guest code needed)
+      const isAdminEntry = new URLSearchParams(window.location.search).has('admin');
+      if (isAdminEntry) {
+        appState.view = 'admin-login';
+        rerender();
+        return;
+      }
+
       const code = getCode();
       if (!code) {
         appState.view = 'error';
@@ -2516,9 +2655,10 @@
           if (ev.rsvp?.status) appState.rsvpStates[ev.id] = ev.rsvp.status;
         });
 
-        appState.view = data.guest.isHost ? 'admin' : 'timeline';
+        // isHost no longer auto-routes to admin; all guests see the RSVP timeline.
+        // Admin access requires visiting /?admin and logging in with a password.
+        appState.view = 'timeline';
         rerender();
-        if (data.guest.isHost) loadAdminData();
       } catch (err) {
         appState.view = 'error';
         appState.errorMessage = null;
