@@ -1758,7 +1758,7 @@
       });
       if (res.status === 403) {
         const err = await res.json().catch(() => ({}));
-        if (err.error === window.BIRTHDAY_CONFIG.strings.errors.emailRequiredToChange) {
+        if (res.status === 403 && err.code === 'EMAIL_REQUIRED') {
           // 2FA required — clear any stale cached email and show the prompt
           const wasMismatch = !!appState.providedEmail;
           appState.providedEmail = null;
@@ -1939,6 +1939,25 @@
       }
     }
 
+    /**
+     * handleAdminAuthExpiry(res, opts?) → boolean
+     *
+     * Call after every admin fetch.  If the response is 401, switches to the
+     * admin-login view with the session-expired message and returns true so the
+     * caller can `return` immediately.  Returns false for any other status.
+     *
+     * opts.clearChipPopover (default false) — set to true in the admin-rsvp
+     * handler which keeps an open chip popover that must be dismissed on expiry.
+     */
+    function handleAdminAuthExpiry(res, opts = {}) {
+      if (res.status !== 401) return false;
+      appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
+      appState.view = 'admin-login';
+      if (opts.clearChipPopover) appState.adminChipPopover = null;
+      rerender();
+      return true;
+    }
+
     async function loadAdminData() {
       try {
         const [evRes, gRes, rRes] = await Promise.all([
@@ -1947,12 +1966,7 @@
           fetch('/api/admin/rsvps',  { credentials: 'same-origin' }),
         ]);
         // Session expired — drop back to login
-        if (evRes.status === 401 || gRes.status === 401 || rRes.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(evRes) || handleAdminAuthExpiry(gRes) || handleAdminAuthExpiry(rRes)) return;
         if (!evRes.ok || !gRes.ok || !rRes.ok) throw new Error('admin load failed');
         const [ev, g, r] = await Promise.all([evRes.json(), gRes.json(), rRes.json()]);
         appState.adminData = { events: ev.events, guests: g.guests, rsvps: r.rsvps };
@@ -2005,12 +2019,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ event: payload }),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
@@ -2037,12 +2046,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: edit.id }),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
@@ -2105,12 +2109,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.saveFailed);
@@ -2137,12 +2136,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ targetCode: edit.originalCode }),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.deleteFailed);
@@ -2166,12 +2160,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ segment: appState.broadcast.segment, preview: true }),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) throw new Error();
         const j = await res.json();
         appState.broadcast.recipientCount = j.count;
@@ -2203,12 +2192,7 @@
             body: b.body,
           }),
         });
-        if (res.status === 401) {
-          appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-          appState.view = 'admin-login';
-          rerender();
-          return;
-        }
+        if (handleAdminAuthExpiry(res)) return;
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || window.BIRTHDAY_CONFIG.strings.admin.sendFailed);
@@ -2454,13 +2438,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetCode: p.code, eventId: p.eventId }),
               });
-              if (res.status === 401) {
-                appState.adminLoginError = window.BIRTHDAY_CONFIG.strings.admin.loginSessionExpired;
-                appState.view = 'admin-login';
-                appState.adminChipPopover = null;
-                rerender();
-                return;
-              }
+              if (handleAdminAuthExpiry(res, { clearChipPopover: true })) return;
               if (!res.ok) throw new Error();
               // Reload admin data so the chip moves to pending
               await loadAdminData();

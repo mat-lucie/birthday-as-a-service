@@ -10,11 +10,25 @@
 
 import { clearSessionCookie } from '../../lib/auth.js';
 
+/**
+ * isLocalRequest mirrors the same helper in api/admin/login.js so that the
+ * Secure flag on the cleared cookie matches the flag that was set on login.
+ * Browsers silently ignore cookie deletions when the Secure attribute differs.
+ */
+function isLocalRequest(req) {
+  const proto = req.headers['x-forwarded-proto'];
+  if (proto === 'https') return false;
+  if (proto === 'http') return true;
+  const host = req.headers['host'] || '';
+  return host.startsWith('localhost') || host.startsWith('127.');
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  res.setHeader('Set-Cookie', clearSessionCookie());
+  const secure = !isLocalRequest(req);
+  res.setHeader('Set-Cookie', clearSessionCookie({ secure }));
   return res.status(200).json({ ok: true });
 }

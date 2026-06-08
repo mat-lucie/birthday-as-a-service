@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     if (config.security?.requireEmailForChanges && guest.email) {
       const provided = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : null;
       if (provided !== guest.email.trim().toLowerCase()) {
-        return res.status(403).json({ error: config.strings.errors.emailRequiredToChange });
+        return res.status(403).json({ error: config.strings.errors.emailRequiredToChange, code: 'EMAIL_REQUIRED' });
       }
     }
 

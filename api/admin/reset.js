@@ -10,10 +10,13 @@
  * Authorization: requires a valid admin_session cookie (same as all other
  * admin endpoints) + the adminLimiter rate limit.
  *
- * Idempotent: running it against an already-empty store returns { ok: true }
- * with zeroed counts — no error.
+ * Safe-to-retry on partial failure: deletes in dependency order so a crash
+ * leaves a recoverable state. Specifically: rsvp:* keys and the events list
+ * are deleted FIRST, then guest:* keys, and the guest-codes index is deleted
+ * LAST. This ensures the index remains intact for re-enumeration on retry.
  *
- * Returns: { ok: true, deletedGuests: number, deletedEvents: number }
+ * Returns on success:  { ok: true, deletedGuests: number, deletedEvents: number }
+ * Returns on failure:  { ok: false, deleted: { guests, events, rsvps }, failed: [string, ...] }
  *
  * USAGE (curl example — the -b flag passes the cookie from a prior login):
  *
@@ -63,23 +66,50 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Delete everything in parallel batches.
-    //    Upstash REST API supports multi-key DEL; we build flat arg lists.
+    // 3. Delete in dependency order so a partial failure leaves a recoverable
+    //    state.  guest-codes is the enumeration index and is deleted LAST, so
+    //    a retry can re-enumerate rsvp:* keys from it if an earlier step fails.
+    //
+    //    Order: (a) rsvp:* keys + events list  →  (b) guest:* keys  →  (c) guest-codes
+    //
+    //    We use Promise.allSettled so that failures in one step are reported
+    //    honestly rather than silently abandoning the remaining steps.
+
     const guestKeys = guestCodes.map(c => `guest:${c}`);
+    const failed = [];
+    let deletedRsvps = 0;
+    let deletedEventsCount = 0;
+    let deletedGuestsCount = 0;
 
-    const deletePromises = [];
+    // Step (a): rsvp:* keys + events list
+    const stepA = [];
+    if (rsvpKeys.length > 0) stepA.push(redis.del(...rsvpKeys).then(n => { deletedRsvps = n; }));
+    stepA.push(redis.del('events').then(() => { deletedEventsCount = allEvents.length; }));
+    const stepAResults = await Promise.allSettled(stepA);
+    stepAResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(`step-a[${i}]: ${r.reason?.message ?? r.reason}`); });
 
-    // Delete all guest:* keys.
-    if (guestKeys.length > 0) deletePromises.push(redis.del(...guestKeys));
+    // Step (b): guest:* keys
+    if (guestKeys.length > 0) {
+      const stepB = await Promise.allSettled([redis.del(...guestKeys)]);
+      stepB.forEach((r, i) => {
+        if (r.status === 'fulfilled') deletedGuestsCount = guestCodes.length;
+        else failed.push(`step-b[${i}]: ${r.reason?.message ?? r.reason}`);
+      });
+    } else {
+      deletedGuestsCount = 0;
+    }
 
-    // Delete all rsvp:*:* keys.
-    if (rsvpKeys.length > 0) deletePromises.push(redis.del(...rsvpKeys));
+    // Step (c): guest-codes index — deleted LAST so retry can re-enumerate
+    const stepC = await Promise.allSettled([redis.del('guest-codes')]);
+    stepC.forEach((r, i) => { if (r.status === 'rejected') failed.push(`step-c[${i}]: ${r.reason?.message ?? r.reason}`); });
 
-    // Delete the guest-codes set and the events list.
-    deletePromises.push(redis.del('guest-codes'));
-    deletePromises.push(redis.del('events'));
-
-    await Promise.all(deletePromises);
+    if (failed.length > 0) {
+      return res.status(500).json({
+        ok: false,
+        deleted: { guests: deletedGuestsCount, events: deletedEventsCount, rsvps: deletedRsvps },
+        failed,
+      });
+    }
 
     return res.status(200).json({
       ok: true,

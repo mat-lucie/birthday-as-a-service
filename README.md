@@ -166,7 +166,7 @@ Set `"visibility": "private"` for invite-only events, and add an `"allowedCodes"
 }
 ```
 
-The `code` becomes the guest's URL: `/?code=unique-invite-code`. Make codes memorable but not guessable (e.g. `alex-rivera`).
+The `code` becomes the guest's URL: `/?code=unique-invite-code`. For anything sensitive use a random value (e.g. `openssl rand -hex 8` → `a3f9c2d1b4e7f8a0`). A memorable slug like `alex-rivera` is fine for low-stakes or fully public events, but it is guessable — prefer random codes when privacy matters.
 
 **Important — the host record:**
 One guest must have `"isHost": true`. This guest identifies the host in the system (e.g. for filtering in the admin panel) but is no longer used as the admin credential — admin access is now password-based (see step 8 below).
@@ -326,7 +326,7 @@ This runs both the static frontend and the serverless functions locally using yo
 This is a hobby self-host model. Here are the inherent trade-offs so deployers aren't surprised:
 
 - **Admin is password + cookie auth.** The login screen (`/?admin`) accepts `ADMIN_PASSWORD` and issues an HttpOnly, SameSite=Strict, HMAC-signed session cookie (7-day TTL). All `api/admin/*` endpoints verify the cookie and check `Origin`/`Referer` against the server host (CSRF defence). The login endpoint is rate-limited to 5 attempts/min per IP; all other admin endpoints are limited to 10/min per IP. Use a strong `ADMIN_PASSWORD` and set `ADMIN_SESSION_SECRET` independently in production.
-- **Invite codes are 64-bit bearer tokens.** Anyone with a guest's invite URL can act as that guest — RSVP on their behalf, see their invited events. Treat invite codes like one-time passwords and share them carefully (link, not code visible in plain text). When `config.security.requireEmailForChanges` is enabled (default: true), a guest who has already saved an email address must re-confirm it before changing an RSVP.
+- **Invite codes are bearer tokens whose strength depends on what you put in `data.json`.** Anyone with a guest's invite URL can act as that guest — RSVP on their behalf, see their invited events. Treat invite codes like one-time passwords and share them carefully (link, not code visible in plain text). Guests created via the admin panel automatically get a 64-bit random suffix appended to their slug, giving strong entropy. Guests loaded from `data.json` use whatever code you supply verbatim — use unguessable random values (e.g. `openssl rand -hex 12`) for anything sensitive; memorable slugs are fine only for low-stakes or fully public events. When `config.security.requireEmailForChanges` is enabled (default: true), a guest who has already saved an email address must re-confirm it before changing an RSVP.
 - **CSP `script-src 'self'`** — inline scripts have been extracted to `/app.js` and `/calendar-app.js`. The `style-src` directive still includes `'unsafe-inline'` (a known residual for inline styles in the templates); XSS defence relies on the app's consistent use of `escapeHtml()` throughout. Do not add user-controlled HTML to the templates without escaping.
 - **Remove demo guests before going live.** `data.json` ships with `demo-alex`, `demo-jordan`, `demo-taylor`, `demo-morgan`, and `demo-casey`. Delete them before seeding your real deployment so strangers can't access your event page. To wipe all demo data after testing, use the admin reset endpoint (see step 11 above).
 

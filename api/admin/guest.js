@@ -81,22 +81,32 @@ export default async function handler(req, res) {
           }
           return out;
         });
-        await redis.set('events', updatedEvents);
 
+        // ── Copy-then-delete: write NEW state fully before removing OLD ──────
+        // A crash after the writes below leaves a recoverable duplicate.
+        // A crash in the old order (delete-then-write) would permanently lose
+        // the guest record.
+
+        // 1. Write new guest key + add new code to index + copy rsvps + update events.
         const allEventIds = updatedEvents.map(e => e.id);
         const oldRsvps = await Promise.all(allEventIds.map(id => redis.get(`rsvp:${originalCode}:${id}`)));
+        await redis.set(`guest:${sanitized.code}`, merged);
+        await redis.sadd('guest-codes', sanitized.code);
+        await redis.set('events', updatedEvents);
         await Promise.all(allEventIds.map((id, i) => {
           if (oldRsvps[i]) return redis.set(`rsvp:${sanitized.code}:${id}`, oldRsvps[i]);
           return null;
         }));
-        await Promise.all(allEventIds.map(id => redis.del(`rsvp:${originalCode}:${id}`)));
 
+        // 2. Remove OLD guest key, old code from index, old rsvps.
+        await Promise.all(allEventIds.map(id => redis.del(`rsvp:${originalCode}:${id}`)));
         await redis.srem('guest-codes', originalCode);
         await redis.del(`guest:${originalCode}`);
+      } else {
+        // Non-rename: write new guest key + update index.
+        await redis.set(`guest:${sanitized.code}`, merged);
+        await redis.sadd('guest-codes', sanitized.code);
       }
-
-      await redis.set(`guest:${sanitized.code}`, merged);
-      await redis.sadd('guest-codes', sanitized.code);
 
       return res.status(200).json({ ok: true, guest: merged, isNew: !originalCode });
     }
