@@ -209,6 +209,12 @@ export default {
 
     /** Server-error screen: shown instead of the 404 copy when the API returns 5xx */
     serverError:      'Something went wrong on our end. Please try again in a moment.',
+
+    /**
+     * Section heading for events whose date falls outside the configured birthday week
+     * (startDate..endDate). Shown below the main week board/strip when such events exist.
+     */
+    otherDatesLabel:  'Other dates',
   },
 
   // ── Confirm-calendar modal dialogs ───────────────────────────────────────

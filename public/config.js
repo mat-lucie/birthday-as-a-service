@@ -115,7 +115,8 @@ window.BIRTHDAY_CONFIG = {
       "successEventPluralSuffix": "events",
       "successEditBtn": "Edit my RSVPs",
       "loadingDots": "Loading…",
-      "serverError": "Something went wrong on our end. Please try again in a moment."
+      "serverError": "Something went wrong on our end. Please try again in a moment.",
+      "otherDatesLabel": "Other dates"
     },
     "modal": {
       "defaultStep": "Final step",

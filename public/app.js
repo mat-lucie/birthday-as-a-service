@@ -893,10 +893,17 @@
       const { guest, events, birthdayWeek } = data;
       const startDate = birthdayWeek.startDate;
       const attendingCount = attendingEventIds().length;
+
+      // Partition events so the 7-col week board only shows in-window events.
+      // Out-of-window events appear in a compact "Other dates" section below.
+      const inWindow  = events.filter(e => { const d = dayOfWeek(e.date, startDate); return d >= 1 && d <= 7; });
+      const outWindow = events.filter(e => { const d = dayOfWeek(e.date, startDate); return d < 1 || d > 7; });
+
       return `<div style="min-height:100vh;padding-bottom:120px;font-family:${SERIF};">
         ${renderDesktopTopBar(guest, attendingCount, events.length)}
         ${renderDesktopIntro(guest, events.length)}
-        ${renderWeekBoard(events, startDate)}
+        ${renderWeekBoard(inWindow, startDate)}
+        ${renderDesktopOtherDates(outWindow)}
         ${renderDesktopConfirmStrip(attendingCount)}
         ${renderConfirmModal()}
       </div>`;
@@ -1536,17 +1543,93 @@
       </section>`;
     }
 
+    // ─── Other dates (out-of-range events) ──────────────────────
+    // Renders events whose date falls outside the configured birthday week.
+    // Returns an empty string when the list is empty — zero visual change for
+    // the common case where all events are in-window.
+    function renderOtherDates(outEvents) {
+      if (!outEvents || outEvents.length === 0) return '';
+      const label = window.BIRTHDAY_CONFIG?.strings?.states?.otherDatesLabel || 'Other dates';
+      const sorted = [...outEvents].sort((a, b) => a.date.localeCompare(b.date));
+      const rows = sorted.map(e => {
+        const d = new Date(e.date + 'T12:00:00');
+        const lang = window.BIRTHDAY_CONFIG?.locale?.language || 'en';
+        const dateLabel = d.toLocaleDateString(lang, { weekday: 'short', month: 'short', day: 'numeric' });
+        const rsvpStatus = getEventRsvp(e.id);
+        const yes = rsvpStatus === 'attending';
+        const no  = rsvpStatus === 'not-attending';
+        const timeStr = e.endTime ? `${e.time} – ${e.endTime}` : (e.time || '');
+        const locationHtml = e.location
+          ? (e.mapsUrl
+              ? `<a href="${escapeHtml(e.mapsUrl)}" target="_blank" rel="noreferrer"
+                   style="display:inline-flex;align-items:center;gap:4px;font-family:${SANS};font-size:11.5px;
+                   color:${C.soft};text-decoration:none;border-bottom:1px solid ${C.ghost};">
+                   ${icon('pin', 12, C.soft)} ${escapeHtml(e.location)}</a>`
+              : `<span style="display:inline-flex;align-items:center;gap:4px;font-family:${SANS};font-size:11.5px;color:${C.soft};">
+                   ${icon('pin', 12, C.soft)} ${escapeHtml(e.location)}</span>`)
+          : '';
+        return `<div data-event-id="${escapeHtml(e.id)}" style="background:rgba(255,255,255,0.70);
+          backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+          box-shadow:${SHADOW_CARD};padding:18px 20px;opacity:${no ? 0.50 : 1};
+          transition:opacity .25s;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-family:${SANS};font-size:10px;font-weight:500;
+              letter-spacing:0.22em;text-transform:uppercase;color:${C.soft};">${escapeHtml(dateLabel)}</span>
+            ${timeStr ? `<span style="font-family:${SANS};font-size:10.5px;color:${C.soft};">${escapeHtml(timeStr)}</span>` : ''}
+          </div>
+          <h4 style="margin:0 0 6px;font-family:${SERIF};font-size:20px;font-weight:400;
+            line-height:1.15;color:${C.primary};">${escapeHtml(e.title)}</h4>
+          ${locationHtml ? `<div style="margin-bottom:10px;">${locationHtml}</div>` : ''}
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            ${renderRsvpBtn(yes, 'yes', e.id, yes ? window.BIRTHDAY_CONFIG.strings.rsvp.yesConfirmed : window.BIRTHDAY_CONFIG.strings.rsvp.yes)}
+            ${renderRsvpBtn(no, 'no', e.id, window.BIRTHDAY_CONFIG.strings.rsvp.no)}
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<section style="padding:0 20px 28px;display:flex;flex-direction:column;gap:14px;">
+        <div style="padding-top:28px;border-top:1px solid ${C.ghost};">
+          ${renderLabel(label, { color: C.soft })}
+        </div>
+        ${rows}
+      </section>`;
+    }
+
+    // ─── Desktop: Other dates list ───────────────────────────────
+    // Compact list below the week board for desktop, using kit-tile-style cards.
+    function renderDesktopOtherDates(outEvents) {
+      if (!outEvents || outEvents.length === 0) return '';
+      const label = window.BIRTHDAY_CONFIG?.strings?.states?.otherDatesLabel || 'Other dates';
+      const sorted = [...outEvents].sort((a, b) => a.date.localeCompare(b.date));
+      const tiles = sorted.map(e => renderKitTile(e)).join('');
+      return `<section style="padding:0 28px 40px;max-width:1280px;margin:0 auto;">
+        <div style="padding-bottom:16px;border-top:1px solid ${C.ghost};padding-top:32px;margin-bottom:16px;">
+          ${renderLabel(label, { color: C.soft })}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;width:100%;">
+            ${tiles}
+          </div>
+        </div>
+      </section>`;
+    }
+
     function renderTimeline(data) {
       if (isDesktop()) return renderDesktopTimeline(data);
       const { guest, events, birthdayWeek } = data;
       const startDate = birthdayWeek.startDate;
-      const days = buildWeekDays(events, startDate);
-      const active = appState.activeDay || activeDay(events, startDate);
-      const daysToStart = daysUntil(startDate);
-      const privateCount = events.filter(e => e.visibility === 'private' || e.forYou).length;
-      const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date));
 
-      // Group events by their day-of-week (1..7)
+      // Partition events into in-window (day 1..7) and out-of-window.
+      const inWindow  = events.filter(e => { const d = dayOfWeek(e.date, startDate); return d >= 1 && d <= 7; });
+      const outWindow = events.filter(e => { const d = dayOfWeek(e.date, startDate); return d < 1 || d > 7; });
+
+      const days = buildWeekDays(inWindow, startDate);
+      const active = appState.activeDay || activeDay(inWindow, startDate);
+      const daysToStart = daysUntil(startDate);
+      const privateCount = inWindow.filter(e => e.visibility === 'private' || e.forYou).length;
+      const sortedEvents = [...inWindow].sort((a, b) => a.date.localeCompare(b.date));
+
+      // Group in-window events by their day-of-week (1..7)
       const grouped = sortedEvents.reduce((acc, e) => {
         const d = dayOfWeek(e.date, startDate);
         (acc[d] = acc[d] || []).push(e);
@@ -1555,8 +1638,8 @@
       const dayKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
 
       const headerLabel = privateCount > 0
-        ? `${events.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel} · ${privateCount} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsForYou}`
-        : `${events.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel}`;
+        ? `${inWindow.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel} · ${privateCount} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsForYou}`
+        : `${inWindow.length} ${window.BIRTHDAY_CONFIG.strings.rsvp.eventsLabel}`;
 
       const attendingCount = attendingEventIds().length;
 
@@ -1571,6 +1654,7 @@
           </div>
           ${dayKeys.map(d => renderDaySection(d, grouped[d], startDate)).join('')}
         </section>
+        ${renderOtherDates(outWindow)}
         ${renderStickyCTA(attendingCount, appState.hasConfirmedOnce)}
         ${renderConfirmModal()}
       </div>`;

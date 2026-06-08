@@ -289,6 +289,41 @@ function writeRuntimeConfig(outputPath) {
   console.log(`  [OK]   config.js → ${outputPath.replace(ROOT, '.')} (runtime window.BIRTHDAY_CONFIG)`);
 }
 
+// ── Check data.json events against the configured week window ─────────────
+// For each event whose date falls outside [startDate, endDate], emit a WARN so
+// the forker notices before publishing.  This is a WARNING only — not a build
+// failure, because a pre/post event is a legitimate choice.
+function checkOutOfWindowEvents() {
+  const { startDate, endDate } = config.event;
+  if (!startDate || !endDate) return; // guard: if dates aren't set, skip silently
+
+  const start = new Date(`${startDate}T12:00:00`);
+  const end   = new Date(`${endDate}T12:00:00`);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return; // guard: invalid dates
+
+  let data;
+  try {
+    const raw = readFileSync(resolve(ROOT, 'data.json'), 'utf8');
+    data = JSON.parse(raw);
+  } catch (err) {
+    // data.json missing or malformed — skip gracefully (it may not exist yet in a fresh fork)
+    return;
+  }
+
+  const events = Array.isArray(data?.events) ? data.events : [];
+  for (const ev of events) {
+    if (!ev.date || typeof ev.date !== 'string') continue;
+    const d = new Date(`${ev.date}T12:00:00`);
+    if (isNaN(d.getTime())) continue;
+    if (d < start || d > end) {
+      const id    = ev.id    || '(no id)';
+      const title = ev.title || '(no title)';
+      console.warn(`  [WARN] Event "${id}" ("${title}") on ${ev.date} is outside the birthday week (${startDate}..${endDate}) — it will appear under "Other dates", and the week strip only covers the configured window.`);
+    }
+  }
+}
+checkOutOfWindowEvents();
+
 // ── Main ───────────────────────────────────────────────────────────────────
 console.log('\nbirthdayaas apply-config');
 console.log('────────────────────────');
