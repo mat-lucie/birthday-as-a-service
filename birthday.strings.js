@@ -117,6 +117,15 @@ export default {
     /** RSVP error banner: retry button */
     retryButton:      'Retry →',
 
+    /** Email second-factor prompt — shown reactively after a 403 emailRequiredToChange */
+    emailConfirmTitle:       'Enter the email on file to change your RSVP',
+    /** Email second-factor prompt — input placeholder */
+    emailConfirmPlaceholder: 'your@email.com',
+    /** Email second-factor prompt — submit button */
+    emailConfirmSubmit:      'Confirm →',
+    /** Email second-factor prompt — shown when the email doesn't match */
+    emailConfirmMismatch:    'That email doesn\'t match. Try again.',
+
     /** Sticky CTA: first confirmation */
     ctaSend:          'Send to calendar',
     /** Sticky CTA: update confirmation */

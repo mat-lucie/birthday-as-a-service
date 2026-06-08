@@ -177,6 +177,8 @@
       hasEmailOnFile: false,    // from /api/guest hasEmail
       knownEmail: null,         // server-stored email (we don't fetch the value but we know it exists)
       typedEmail: '',           // for input persistence
+      providedEmail: null,      // session-cached email proven via 2FA prompt (reactive-on-403)
+      rsvpEmailPrompts: {},     // { [eventId]: { show: bool, mismatch: bool, pendingPayload: obj } }
       hasConfirmedOnce: false,
       confirmedEvents: [],      // last set of confirmed event objects (for success screen)
       confirmedEmail: null,     // last email used in confirm (for success screen)
@@ -396,6 +398,7 @@
       const day = dayOfWeek(event.date, startDateStr);
       const weekday = weekdayShort(event.date);
       const rsvpError = appState.rsvpErrors[event.id];
+      const emailPrompt = appState.rsvpEmailPrompts[event.id];
 
       // Past event variant (#19) — separate render
       if (past) return renderPastEventCard(event, day, weekday);
@@ -447,7 +450,28 @@
         : '';
 
       // RSVP error banner (#17) — inline, tonal red
-      const errorBannerHtml = rsvpError ? `
+      // When the server sends 403 emailRequiredToChange, we show an inline email-confirm
+      // prompt instead of (or replacing) the generic error banner. Reactive-on-403 only —
+      // guests without a saved email never see this.
+      const S2FA = window.BIRTHDAY_CONFIG.strings.rsvp;
+      const errorBannerHtml = emailPrompt?.show ? `
+        <div style="margin-top:16px;padding:12px;background:rgba(186,26,26,0.06);color:#7a1212;">
+          <p style="margin:0 0 8px;font-family:${SERIF};font-size:13px;font-style:italic;">
+            ${escapeHtml(emailPrompt.mismatch ? S2FA.emailConfirmMismatch : S2FA.emailConfirmTitle)}
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input data-rsvp-email-input="${escapeHtml(event.id)}" type="email" autocomplete="email"
+              placeholder="${escapeHtml(S2FA.emailConfirmPlaceholder)}"
+              style="flex:1;padding:8px 0;background:transparent;border:0;
+              border-bottom:1px solid rgba(186,26,26,0.4);font-family:${SERIF};font-size:15px;
+              color:#7a1212;outline:none;"/>
+            <button data-rsvp-email-submit="${escapeHtml(event.id)}"
+              style="font-family:${SANS};font-size:10px;font-weight:500;
+              letter-spacing:0.22em;text-transform:uppercase;color:#7a1212;
+              white-space:nowrap;cursor:pointer;">${escapeHtml(S2FA.emailConfirmSubmit)}</button>
+          </div>
+        </div>` :
+        rsvpError ? `
         <div style="margin-top:16px;padding:10px 12px;background:rgba(186,26,26,0.08);color:#7a1212;
           display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <span style="font-family:${SERIF};font-size:13px;font-style:italic;">${escapeHtml(rsvpError)}</span>
@@ -869,6 +893,34 @@
         <span style="font-size:11px;transform:${expanded ? 'rotate(180deg)' : 'none'};transition:transform .2s;">›</span>
       </button>`;
 
+      const kitRsvpError = appState.rsvpErrors[event.id];
+      const kitEmailPrompt = appState.rsvpEmailPrompts[event.id];
+      const SK = window.BIRTHDAY_CONFIG.strings.rsvp;
+      const kitErrorBannerHtml = kitEmailPrompt?.show ? `
+        <div style="margin-top:4px;padding:8px;background:rgba(186,26,26,0.08);color:#7a1212;">
+          <p style="margin:0 0 6px;font-family:${SERIF};font-size:11.5px;font-style:italic;">
+            ${escapeHtml(kitEmailPrompt.mismatch ? SK.emailConfirmMismatch : SK.emailConfirmTitle)}
+          </p>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input data-rsvp-email-input="${escapeHtml(event.id)}" type="email" autocomplete="email"
+              placeholder="${escapeHtml(SK.emailConfirmPlaceholder)}"
+              style="flex:1;padding:4px 0;background:transparent;border:0;
+              border-bottom:1px solid rgba(186,26,26,0.4);font-family:${SERIF};font-size:13px;
+              color:#7a1212;outline:none;"/>
+            <button data-rsvp-email-submit="${escapeHtml(event.id)}"
+              style="font-family:${SANS};font-size:9px;font-weight:500;
+              letter-spacing:0.22em;text-transform:uppercase;color:#7a1212;
+              white-space:nowrap;cursor:pointer;">${escapeHtml(SK.emailConfirmSubmit)}</button>
+          </div>
+        </div>` :
+        kitRsvpError ? `
+        <div style="margin-top:4px;padding:8px 10px;background:rgba(186,26,26,0.08);color:#7a1212;
+          display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span style="font-family:${SERIF};font-size:11.5px;font-style:italic;">${escapeHtml(kitRsvpError)}</span>
+          <button data-retry-rsvp="${event.id}" style="font-family:${SANS};font-size:9px;font-weight:500;
+            letter-spacing:0.22em;text-transform:uppercase;color:#7a1212;cursor:pointer;">${SK.retryButton}</button>
+        </div>` : '';
+
       return `<div data-event-id="${event.id}" style="background:${bg};color:${fg};
         border-radius:0;box-shadow:${tileShadow};opacity:${no ? 0.45 : 1};
         overflow:hidden;transition:background .25s, opacity .25s;
@@ -888,6 +940,7 @@
           ${renderKitRsvpBtn(no, 'no', event.id, onDark)}
         </div>
         ${(yes && event.allowPlusOne) ? renderKitPlusOneRow(event.id, onDark, subFg) : ''}
+        ${kitErrorBannerHtml}
       </div>`;
     }
 
@@ -1736,6 +1789,39 @@
       if (newEl) el.replaceWith(newEl);
     }
 
+    // ─── Email-2FA RSVP helper ────────────────────────────────────
+    // Sends an /api/rsvp POST. If the server returns 403 emailRequiredToChange,
+    // stores the pending payload and shows the inline email-confirm prompt.
+    // If appState.providedEmail is already set (cached from a prior confirmed prompt
+    // in this session), it is included automatically.
+    // Guests without a saved email (hasEmail:false) and servers with
+    // requireEmailForChanges:false will never 403 so this path is never triggered.
+    async function postRsvpOrPrompt(payload, eventId) {
+      const body = { ...payload };
+      if (appState.providedEmail) body.email = appState.providedEmail;
+      const res = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.status === 403) {
+        const err = await res.json().catch(() => ({}));
+        if (err.error === window.BIRTHDAY_CONFIG.strings.errors.emailRequiredToChange) {
+          // 2FA required — clear any stale cached email and show the prompt
+          const wasMismatch = !!appState.providedEmail;
+          appState.providedEmail = null;
+          appState.rsvpEmailPrompts[eventId] = {
+            show: true,
+            mismatch: wasMismatch,
+            pendingPayload: payload,
+          };
+          rerender();
+          return;
+        }
+      }
+      if (!res.ok) throw new Error();
+    }
+
     // ─── Handlers ────────────────────────────────────────────────
     async function handleRsvp(eventId, variant) {
       const current = getEventRsvp(eventId);
@@ -1752,6 +1838,7 @@
       // (treated as a return to timeline; modal closed)
 
       delete appState.rsvpErrors[eventId];
+      delete appState.rsvpEmailPrompts[eventId];
 
       // Switching away from 'attending' wipes any in-flight plus-one — they can't
       // bring someone to an event they're not going to.
@@ -1764,13 +1851,8 @@
           const code = getCode();
           const payload = { code, eventId, status: newStatus };
           if (newStatus === 'not-attending') payload.plusOne = null;
-          const res = await fetch('/api/rsvp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (!res.ok) throw new Error(window.BIRTHDAY_CONFIG.strings.admin.rsvpNotSaved);
-        } catch (err) {
+          await postRsvpOrPrompt(payload, eventId);
+        } catch {
           appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
           rerender();
         }
@@ -1786,15 +1868,10 @@
 
       try {
         const code = getCode();
-        const res = await fetch('/api/rsvp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code, eventId, status: 'attending',
-            plusOne: enabled ? { name: current?.name || '' } : null,
-          }),
-        });
-        if (!res.ok) throw new Error();
+        await postRsvpOrPrompt({
+          code, eventId, status: 'attending',
+          plusOne: enabled ? { name: current?.name || '' } : null,
+        }, eventId);
       } catch {
         appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
         rerender();
@@ -1806,15 +1883,37 @@
       if (!state?.enabled) return;
       try {
         const code = getCode();
-        const res = await fetch('/api/rsvp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code, eventId, status: 'attending',
-            plusOne: { name: state.name || '' },
-          }),
-        });
-        if (!res.ok) throw new Error();
+        await postRsvpOrPrompt({
+          code, eventId, status: 'attending',
+          plusOne: { name: state.name || '' },
+        }, eventId);
+      } catch {
+        appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
+        rerender();
+      }
+    }
+
+    // Handles submit of the inline email-2FA prompt after a 403 emailRequiredToChange.
+    // Reads the typed email from the DOM input, caches it in appState.providedEmail,
+    // then retries the pending RSVP payload (which will now include the email).
+    // If the server 403s again, postRsvpOrPrompt sets mismatch:true and rerenders the prompt.
+    async function submitRsvpEmailConfirm(eventId) {
+      const prompt = appState.rsvpEmailPrompts[eventId];
+      if (!prompt?.show || !prompt.pendingPayload) return;
+      const input = document.querySelector(`[data-rsvp-email-input="${CSS.escape(eventId)}"]`);
+      const typed = (input?.value || '').trim();
+      if (!typed || !typed.includes('@')) {
+        // Not a valid email — show mismatch hint without round-tripping
+        appState.rsvpEmailPrompts[eventId] = { ...prompt, mismatch: true };
+        rerender();
+        return;
+      }
+      // Cache the typed email for the retry (and future writes this session)
+      appState.providedEmail = typed;
+      // Clear the prompt while we retry — postRsvpOrPrompt will re-show if still 403
+      delete appState.rsvpEmailPrompts[eventId];
+      try {
+        await postRsvpOrPrompt(prompt.pendingPayload, eventId);
       } catch {
         appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
         rerender();
@@ -2264,18 +2363,20 @@
           (async () => {
             try {
               const code = getCode();
-              const res = await fetch('/api/rsvp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, eventId, status }),
-              });
-              if (!res.ok) throw new Error();
+              await postRsvpOrPrompt({ code, eventId, status }, eventId);
             } catch {
               appState.rsvpErrors[eventId] = window.BIRTHDAY_CONFIG.strings.rsvp.rsvpSaveError;
               rerender();
             }
           })();
         }
+        return;
+      }
+
+      // Email 2FA prompt submit (reactive-on-403)
+      const emailSubmit = e.target.closest('[data-rsvp-email-submit]');
+      if (emailSubmit) {
+        submitRsvpEmailConfirm(emailSubmit.dataset.rsvpEmailSubmit);
         return;
       }
 
@@ -2490,6 +2591,9 @@
       if (e.key === 'Enter') {
         const input = e.target.closest('[data-confirm-email]');
         if (input && input.value && input.value.includes('@')) submitConfirm();
+        // Email 2FA inline prompt — Enter submits
+        const rsvpEmailInput = e.target.closest('[data-rsvp-email-input]');
+        if (rsvpEmailInput) { submitRsvpEmailConfirm(rsvpEmailInput.dataset.rsvpEmailInput); return; }
         const pwInput = e.target.closest('[data-admin-password]');
         if (pwInput) { handleAdminLogin(); return; }
       } else if (e.key === 'Escape') {
