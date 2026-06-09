@@ -1,7 +1,7 @@
 {
   "name": "birthday-as-a-service",
   "description": "Self-host birthday-week RSVP site — edit one config file, deploy to Vercel.",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "license": "MIT",
   "private": true,
   "type": "module",
