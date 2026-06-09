@@ -1,22 +1,16 @@
 import { Redis } from '@upstash/redis';
+import { requireAdmin } from '../../lib/auth.js';
+import { adminLimiter, enforce } from '../../lib/ratelimit.js';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
 
-async function requireHost(code) {
-  if (!code) return { status: 400, body: { error: 'Missing code' } };
-  const guest = await redis.get(`guest:${code}`);
-  if (!guest) return { status: 404, body: { error: 'Guest not found' } };
-  if (!guest.isHost) return { status: 403, body: { error: 'Not authorized' } };
-  return null;
-}
-
 function slugify(str) {
   return String(str || '')
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
     .slice(0, 40) || `event-${Date.now()}`;
 }
@@ -55,36 +49,41 @@ function sanitize(event) {
 }
 
 export default async function handler(req, res) {
-  const { code } = req.body || {};
-  const authErr = await requireHost(code);
-  if (authErr) return res.status(authErr.status).json(authErr.body);
+  try {
+    if (!(await enforce(adminLimiter, req, res))) return;
+    const authErr = requireAdmin(req); // synchronous
+    if (authErr) return res.status(authErr.status).json(authErr.body);
 
-  if (req.method === 'POST') {
-    const { event } = req.body || {};
-    if (!event || !event.title || !event.date || !event.time) {
-      return res.status(400).json({ error: 'Missing required fields: title, date, time' });
+    if (req.method === 'POST') {
+      const { event } = req.body || {};
+      if (!event || !event.title || !event.date || !event.time) {
+        return res.status(400).json({ error: 'Missing required fields: title, date, time' });
+      }
+      const sanitized = sanitize(event);
+      const events = (await redis.get('events')) || [];
+      const idx = events.findIndex(e => e.id === sanitized.id);
+      const isNew = idx < 0;
+      if (isNew) events.push(sanitized);
+      else events[idx] = sanitized;
+      await redis.set('events', events);
+      return res.status(200).json({ ok: true, event: sanitized, isNew });
     }
-    const sanitized = sanitize(event);
-    const events = (await redis.get('events')) || [];
-    const idx = events.findIndex(e => e.id === sanitized.id);
-    const isNew = idx < 0;
-    if (isNew) events.push(sanitized);
-    else events[idx] = sanitized;
-    await redis.set('events', events);
-    return res.status(200).json({ ok: true, event: sanitized, isNew });
-  }
 
-  if (req.method === 'DELETE') {
-    const { id } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'Missing id' });
-    const events = (await redis.get('events')) || [];
-    const next = events.filter(e => e.id !== id);
-    if (next.length === events.length) return res.status(404).json({ error: 'Event not found' });
-    await redis.set('events', next);
-    const guestCodes = await redis.smembers('guest-codes');
-    await Promise.all(guestCodes.map(c => redis.del(`rsvp:${c}:${id}`)));
-    return res.status(200).json({ ok: true });
-  }
+    if (req.method === 'DELETE') {
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'Missing id' });
+      const events = (await redis.get('events')) || [];
+      const next = events.filter(e => e.id !== id);
+      if (next.length === events.length) return res.status(404).json({ error: 'Event not found' });
+      await redis.set('events', next);
+      const guestCodes = await redis.smembers('guest-codes');
+      await Promise.all(guestCodes.map(c => redis.del(`rsvp:${c}:${id}`)));
+      return res.status(200).json({ ok: true });
+    }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error('admin/event handler failed', err?.message);
+    return res.status(500).json({ error: 'server_error' });
+  }
 }

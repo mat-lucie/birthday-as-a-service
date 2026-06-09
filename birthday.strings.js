@@ -117,6 +117,15 @@ export default {
     /** RSVP error banner: retry button */
     retryButton:      'Retry →',
 
+    /** Email second-factor prompt — shown reactively after a 403 emailRequiredToChange */
+    emailConfirmTitle:       'Enter the email on file to change your RSVP',
+    /** Email second-factor prompt — input placeholder */
+    emailConfirmPlaceholder: 'your@email.com',
+    /** Email second-factor prompt — submit button */
+    emailConfirmSubmit:      'Confirm →',
+    /** Email second-factor prompt — shown when the email doesn't match */
+    emailConfirmMismatch:    'That email doesn\'t match. Try again.',
+
     /** Sticky CTA: first confirmation */
     ctaSend:          'Send to calendar',
     /** Sticky CTA: update confirmation */
@@ -200,6 +209,12 @@ export default {
 
     /** Server-error screen: shown instead of the 404 copy when the API returns 5xx */
     serverError:      'Something went wrong on our end. Please try again in a moment.',
+
+    /**
+     * Section heading for events whose date falls outside the configured birthday week
+     * (startDate..endDate). Shown below the main week board/strip when such events exist.
+     */
+    otherDatesLabel:  'Other dates',
   },
 
   // ── Confirm-calendar modal dialogs ───────────────────────────────────────
@@ -267,6 +282,14 @@ export default {
     /** Send button */
     sendSameBtn:      'Yes, send →',
 
+    // ── Email on file + 2FA ─────────────────────────────────────────────────
+    /** Step label when 2FA re-entry is required for returning guest */
+    confirmEmailStep:        'Verify your email',
+    /** Prompt shown above the email input when 2FA flag is on for a returning guest */
+    confirmEmailToContinue:  'Enter the email on file to continue.',
+    /** Hint shown when the server rejects the email (403 reactive path) */
+    confirmEmailMismatch:    "That email didn't match. Try again.",
+
     // ── Validation ─────────────────────────────────────────────────
     /** Inline error when typed email is invalid */
     invalidEmail:     'Invalid email. Please double-check.',
@@ -274,6 +297,28 @@ export default {
 
   // ── Admin panel ──────────────────────────────────────────────────────────
   admin: {
+    // ── Login screen ──────────────────────────────────────────────
+    /** Admin login screen: page title */
+    loginTitle:             'Admin Login',
+    /** Admin login screen: password field label */
+    loginPasswordLabel:     'Password',
+    /** Admin login screen: password field placeholder */
+    loginPasswordPlaceholder: 'Enter admin password',
+    /** Admin login screen: submit button */
+    loginSubmit:            'Sign in',
+    /** Admin login screen: wrong password message */
+    loginWrongPassword:     'Incorrect password.',
+    /** Admin login screen: too many attempts message */
+    loginTooManyAttempts:   'Too many attempts. Please wait a minute.',
+    /** Admin login screen: generic error */
+    loginError:             'Something went wrong. Please try again.',
+    /** Admin login screen: session expired message */
+    loginSessionExpired:    'Your session expired. Please sign in again.',
+
+    // ── Logout ────────────────────────────────────────────────────
+    /** Admin panel header: logout button */
+    logout:                 'Sign out',
+
     // ── Shell ──────────────────────────────────────────────────────
     /** Admin panel eyebrow label prefix (followed by site.title) */
     eyebrow:          'Admin ·',
@@ -692,6 +737,22 @@ export default {
      */
     calendarSendFailed:  'We could not send you the calendar email:',
 
+    // ── Admin authentication errors ────────────────────────────────
+    /**
+     * Returned when ADMIN_PASSWORD / ADMIN_SESSION_SECRET env vars are unset.
+     * Surfaced to the admin UI — not shown to guests.
+     */
+    adminNotConfigured:       'Admin auth not configured (set ADMIN_PASSWORD).',
+    /**
+     * Returned when the admin_session cookie is missing or its token is
+     * invalid / expired.  Generic to avoid leaking verification details.
+     */
+    notAuthenticated:         'Not authenticated.',
+    /** Returned when a POST/PUT/PATCH/DELETE comes from a different origin. */
+    crossOriginBlocked:       'Cross-origin request blocked.',
+    /** Returned on a failed login attempt.  Generic to avoid user enumeration. */
+    loginIncorrect:           'Incorrect password.',
+
     // ── Admin guest management errors ──────────────────────────────
     /** Returned when guest name is missing on create/update */
     adminGuestNameRequired:   'Name is required.',
@@ -706,6 +767,12 @@ export default {
     adminGuestDuplicateCode:  'A guest with that code already exists:',
     /** Returned when the host guest cannot be deleted */
     adminGuestCannotDeleteHost: 'The host guest cannot be deleted.',
+
+    /**
+     * Returned when a guest with a saved email tries to modify their RSVP
+     * without supplying that same email (security.requireEmailForChanges = true).
+     */
+    emailRequiredToChange: 'Enter the email on file to change your RSVP.',
   },
 
   // ── Shared / common ───────────────────────────────────────────────────────

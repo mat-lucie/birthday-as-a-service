@@ -105,8 +105,18 @@ export default async function handler(req, res) {
       selected.push(ev);
     }
 
-    if (email && email !== guest.email && guest.email) {
+    if (email && guest.email && email.trim().toLowerCase() !== guest.email.trim().toLowerCase()) {
       return res.status(403).json({ error: `${config.strings.errors.emailAlreadySaved} ${config.messages.emailChangeError}` });
+    }
+
+    // Optional email second-factor: if the guest has a saved email, any RSVP
+    // write must include a matching email — an absent email is NOT allowed (fail
+    // closed). Guests with no saved email are unaffected.
+    if (config.security?.requireEmailForChanges && guest.email) {
+      const provided = typeof email === 'string' ? email.trim().toLowerCase() : null;
+      if (provided !== guest.email.trim().toLowerCase()) {
+        return res.status(403).json({ error: config.strings.errors.emailRequiredToChange, code: 'EMAIL_REQUIRED' });
+      }
     }
 
     const now = new Date().toISOString();

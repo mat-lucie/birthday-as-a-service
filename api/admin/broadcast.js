@@ -1,5 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { sendEmail } from '../../lib/email.js';
+import { requireAdmin } from '../../lib/auth.js';
+import { adminLimiter, enforce } from '../../lib/ratelimit.js';
 import config from '../../birthday.config.js';
 
 const redis = new Redis({
@@ -23,14 +25,6 @@ function renderTemplate(template, { name, link }) {
   return String(template || '')
     .replaceAll('{name}', name)
     .replaceAll('{link}', link);
-}
-
-async function requireHost(code) {
-  if (!code) return { status: 400, body: { error: 'Missing code' } };
-  const guest = await redis.get(`guest:${code}`);
-  if (!guest) return { status: 404, body: { error: 'Guest not found' } };
-  if (!guest.isHost) return { status: 403, body: { error: 'Not authorized' } };
-  return null;
 }
 
 function isInvited(event, code) {
@@ -71,42 +65,49 @@ async function pickRecipients(segment) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { code, segment, subject, body, preview } = req.body || {};
-  const authErr = await requireHost(code);
-  if (authErr) return res.status(authErr.status).json(authErr.body);
-  if (!segment) return res.status(400).json({ error: 'Missing segment' });
+  try {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    if (!(await enforce(adminLimiter, req, res))) return;
+    const authErr = requireAdmin(req); // synchronous
+    if (authErr) return res.status(authErr.status).json(authErr.body);
 
-  const recipients = await pickRecipients(segment);
+    const { segment, subject, body, preview } = req.body || {};
+    if (!segment) return res.status(400).json({ error: 'Missing segment' });
 
-  if (preview) {
-    return res.status(200).json({ ok: true, count: recipients.length });
-  }
+    const recipients = await pickRecipients(segment);
 
-  if (!subject || !body) return res.status(400).json({ error: 'Missing subject or body' });
-  if (recipients.length === 0) return res.status(200).json({ ok: true, sent: 0, total: 0 });
+    if (preview) {
+      return res.status(200).json({ ok: true, count: recipients.length });
+    }
 
-  const results = await Promise.all(
-    recipients.map(g => {
-      const link = `${BASE_URL}/?code=${g.code}`;
-      const personalBody = renderTemplate(body, { name: g.name, link });
-      const bodyHtml = personalBody.split('\n\n')
-        .map(p => `<p>${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-        .join('');
-      return sendEmail({
-        to: g.email,
-        subject: renderTemplate(subject, { name: g.name, link }),
-        html: `<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1c1c16;max-width:560px;">
+    if (!subject || !body) return res.status(400).json({ error: 'Missing subject or body' });
+    if (recipients.length === 0) return res.status(200).json({ ok: true, sent: 0, total: 0 });
+
+    const results = await Promise.all(
+      recipients.map(g => {
+        const link = `${BASE_URL}/?code=${g.code}`;
+        const personalBody = renderTemplate(body, { name: g.name, link });
+        const bodyHtml = personalBody.split('\n\n')
+          .map(p => `<p>${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+          .join('');
+        return sendEmail({
+          to: g.email,
+          subject: renderTemplate(subject, { name: g.name, link }),
+          html: `<div style="font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#1c1c16;max-width:560px;">
           <p>${escapeHtml(config.strings.email.broadcastGreeting)} ${escapeHtml(g.name)},</p>
           ${bodyHtml}
           <p style="margin-top:32px;color:#7a8a85;">${escapeHtml(config.strings.email.broadcastSignoff)} ${escapeHtml(config.host.name)}</p>
         </div>`,
-        logContext: { broadcast: segment, recipient: g.code },
-      });
-    })
-  );
+          logContext: { broadcast: segment, recipient: g.code },
+        });
+      })
+    );
 
-  const sent = results.filter(r => r.ok).length;
-  const failed = results.length - sent;
-  return res.status(200).json({ ok: sent > 0, sent, failed, total: recipients.length });
+    const sent = results.filter(r => r.ok).length;
+    const failed = results.length - sent;
+    return res.status(200).json({ ok: sent > 0, sent, failed, total: recipients.length });
+  } catch (err) {
+    console.error('admin/broadcast handler failed', err?.message);
+    return res.status(500).json({ error: 'server_error' });
+  }
 }

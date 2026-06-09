@@ -47,6 +47,9 @@ window.BIRTHDAY_CONFIG = {
   "messages": {
     "emailChangeError": "Ask the host to change it."
   },
+  "security": {
+    "requireEmailForChanges": true
+  },
   "strings": {
     "rsvp": {
       "yes": "Yes",
@@ -79,6 +82,10 @@ window.BIRTHDAY_CONFIG = {
       "eventsForYou": "for you",
       "rsvpSaveError": "Not saved. Retry.",
       "retryButton": "Retry →",
+      "emailConfirmTitle": "Enter the email on file to change your RSVP",
+      "emailConfirmPlaceholder": "your@email.com",
+      "emailConfirmSubmit": "Confirm →",
+      "emailConfirmMismatch": "That email doesn't match. Try again.",
       "ctaSend": "Send to calendar",
       "ctaUpdate": "Update invitations",
       "eventSingular": "event chosen",
@@ -108,7 +115,8 @@ window.BIRTHDAY_CONFIG = {
       "successEventPluralSuffix": "events",
       "successEditBtn": "Edit my RSVPs",
       "loadingDots": "Loading…",
-      "serverError": "Something went wrong on our end. Please try again in a moment."
+      "serverError": "Something went wrong on our end. Please try again in a moment.",
+      "otherDatesLabel": "Other dates"
     },
     "modal": {
       "defaultStep": "Final step",
@@ -137,9 +145,21 @@ window.BIRTHDAY_CONFIG = {
       "emailOnFileBody": "It's the email you used last time.",
       "cancelBtn": "Cancel",
       "sendSameBtn": "Yes, send →",
+      "confirmEmailStep": "Verify your email",
+      "confirmEmailToContinue": "Enter the email on file to continue.",
+      "confirmEmailMismatch": "That email didn't match. Try again.",
       "invalidEmail": "Invalid email. Please double-check."
     },
     "admin": {
+      "loginTitle": "Admin Login",
+      "loginPasswordLabel": "Password",
+      "loginPasswordPlaceholder": "Enter admin password",
+      "loginSubmit": "Sign in",
+      "loginWrongPassword": "Incorrect password.",
+      "loginTooManyAttempts": "Too many attempts. Please wait a minute.",
+      "loginError": "Something went wrong. Please try again.",
+      "loginSessionExpired": "Your session expired. Please sign in again.",
+      "logout": "Sign out",
       "eyebrow": "Admin ·",
       "panelTitle": "Panel",
       "tabEvents": "Events",
@@ -317,11 +337,16 @@ window.BIRTHDAY_CONFIG = {
       "emailInvalid": "Invalid email address.",
       "emailAlreadySaved": "You already have a saved email.",
       "calendarSendFailed": "We could not send you the calendar email:",
+      "adminNotConfigured": "Admin auth not configured (set ADMIN_PASSWORD).",
+      "notAuthenticated": "Not authenticated.",
+      "crossOriginBlocked": "Cross-origin request blocked.",
+      "loginIncorrect": "Incorrect password.",
       "adminGuestNameRequired": "Name is required.",
       "adminGuestGenderRequired": "Gender is required (f or m).",
       "adminGuestInvalidName": "Invalid name (generates no code).",
       "adminGuestDuplicateCode": "A guest with that code already exists:",
-      "adminGuestCannotDeleteHost": "The host guest cannot be deleted."
+      "adminGuestCannotDeleteHost": "The host guest cannot be deleted.",
+      "emailRequiredToChange": "Enter the email on file to change your RSVP."
     },
     "common": {
       "save": "Save",

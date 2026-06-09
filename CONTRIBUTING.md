@@ -20,11 +20,11 @@ If you only need to work on frontend templates, `npx serve public` is enough —
 
 ## Making changes to templates
 
-`public/index.template.html` and `public/calendar.template.html` are the canonical sources. The generated `public/index.html`, `public/calendar.html`, and `public/config.js` are outputs — commit them alongside template changes after running `npm run config`.
+`public/index.template.html` and `public/calendar.template.html` are the canonical sources. The generated `public/index.html`, `public/calendar.html`, `public/config.js`, `public/app.js`, and `public/calendar-app.js` are outputs — commit them alongside template changes after running `npm run config`.
 
 ## Pull requests
 
 1. Fork → branch → PR against `main`
-2. Run `npm run config` if you touched any template or config file; commit the regenerated outputs
+2. Run `npm run config` if you touched any template or config file; commit the regenerated outputs (`public/index.html`, `public/calendar.html`, `public/config.js`, `public/app.js`, `public/calendar-app.js`)
 3. Describe what the change does and why in the PR description
 4. Keep PRs focused — one feature or fix per PR
