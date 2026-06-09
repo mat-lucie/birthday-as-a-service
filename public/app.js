@@ -2079,7 +2079,7 @@
       try {
         const payload = { ...edit.draft };
         if (edit.id) payload.id = edit.id;
-        const res = await fetch('/api/admin/event', {
+        const res = await fetch('/api/admin/events', {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -2106,7 +2106,7 @@
       edit.deleting = true; edit.error = null;
       rerender();
       try {
-        const res = await fetch('/api/admin/event', {
+        const res = await fetch('/api/admin/events', {
           method: 'DELETE',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -2169,7 +2169,7 @@
           },
         };
         if (edit.originalCode) payload.originalCode = edit.originalCode;
-        const res = await fetch('/api/admin/guest', {
+        const res = await fetch('/api/admin/guests', {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -2196,7 +2196,7 @@
       edit.deleting = true; edit.error = null;
       rerender();
       try {
-        const res = await fetch('/api/admin/guest', {
+        const res = await fetch('/api/admin/guests', {
           method: 'DELETE',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -2498,7 +2498,7 @@
         } else if (act === 'reset') {
           (async () => {
             try {
-              const res = await fetch('/api/admin/rsvp', {
+              const res = await fetch('/api/admin/rsvps', {
                 method: 'DELETE',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
